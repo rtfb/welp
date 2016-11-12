@@ -2,16 +2,21 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 func num(tok token) int {
-	return int(tok - '0')
+	n, err := strconv.Atoi(string(tok.value))
+	if err != nil {
+		panic(err)
+	}
+	return n
 }
 
 // TODO fix parser to produce an actual nil instead of this node
 func nilNode(n *node) bool {
-	return n.tok == tokVoid && n.l == nil && n.r == nil
+	return n.tok.typ == tokVoid && n.l == nil && n.r == nil
 }
 
 func sum(ast *node) int {
@@ -33,12 +38,15 @@ func mul(ast *node) int {
 }
 
 func eval(ast *node) int {
-	switch ast.l.tok {
-	case '+':
-		return sum(ast.r)
-	case '*':
-		return mul(ast.r)
-	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+	switch ast.l.tok.typ {
+	case tokIdentifier:
+		switch string(ast.l.tok.value) {
+		case "+":
+			return sum(ast.r)
+		case "*":
+			return mul(ast.r)
+		}
+	case tokNumber:
 		return num(ast.l.tok)
 	case tokVoid:
 		return eval(ast.l)
@@ -53,10 +61,10 @@ var indent int
 func dump(ast *node) {
 	indent += 4
 	prefix := strings.Repeat(" ", indent)
-	if ast.tok == tokVoid {
+	if ast.tok.typ == tokVoid {
 		fmt.Printf("%s-\n", prefix)
 	} else {
-		fmt.Printf("%stok: %c\n", prefix, rune(ast.tok))
+		fmt.Printf("%stok: %s\n", prefix, ast.tok.value)
 	}
 	if ast.l != nil {
 		dump(ast.l)

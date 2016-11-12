@@ -12,17 +12,17 @@ func TestTokenizer(t *testing.T) {
 		head     int
 		expected token
 	}{
-		{"", 0, tokEOF},
-		{"", 1, tokEOF},
-		{" ", 0, tokEOF},
-		{"(", 0, '('},
-		{"1+2", 1, '+'},
-		{"1+2", 2, '2'},
-		{"1+2", 3, tokEOF},
+		{"", 0, token{typ: tokEOF}},
+		{"", 1, token{typ: tokEOF}},
+		{" ", 0, token{typ: tokEOF}},
+		{"(", 0, token{typ: tokOpenParen, value: []byte("(")}},
+		{"1+2", 1, token{typ: tokIdentifier, value: []byte("+")}},
+		{"1+2", 2, token{typ: tokNumber, value: []byte("2")}},
+		{"1+2", 3, token{typ: tokEOF}},
 	}
 	for _, test := range tests {
 		got, _ := getToken([]byte(test.input), test.head)
-		if got != test.expected {
+		if !tokEqual(got, test.expected) {
 			assert.Equal(t, got, test.expected, "getToken(%q, %d)",
 				test.input, test.head)
 		}

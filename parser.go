@@ -20,11 +20,11 @@ func (p *parser) rparse() {
 		return
 	}
 	var tok token
-	for tok != tokEOF {
+	for tok.typ != tokEOF {
 		tok, p.inputHead = getToken(p.input, p.inputHead)
 		var treeNode *node
-		switch tok {
-		case '(':
+		switch tok.typ {
+		case tokOpenParen:
 			var branchPoint *node
 			if p.tree == nil {
 				p.tree = &node{}
@@ -43,9 +43,9 @@ func (p *parser) rparse() {
 				p.head = branchPoint.r
 			}
 			continue
-		case ')':
+		case tokCloseParen:
 			return
-		case '+', '-', '*', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+		case tokIdentifier, tokNumber:
 			treeNode = &node{
 				tok: tok,
 			}
@@ -53,7 +53,7 @@ func (p *parser) rparse() {
 			p.done = true
 			return
 		default:
-			fmt.Printf("Unknown token: %c\n", rune(tok))
+			fmt.Printf("Unknown token: %v\n", tok)
 		}
 		if p.head == nil {
 			println("err1")
