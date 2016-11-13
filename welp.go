@@ -19,30 +19,48 @@ func nilNode(n *node) bool {
 	return n.tok.typ == tokVoid && n.l == nil && n.r == nil
 }
 
-func sum(ast *node) int {
+func sum(ast *node) *value {
 	acc := num(ast.l.tok)
 	for !nilNode(ast.r) {
-		acc += eval(ast.r)
+		rval := eval(ast.r)
+		if rval.typ != valNum {
+			fmt.Printf("Type error: unexpected type %s for +", rval.typ.String())
+		}
+		acc += rval.numValue
 		ast = ast.r
 	}
-	return acc
+	return &value{
+		typ:      valNum,
+		numValue: acc,
+	}
 }
 
-func mul(ast *node) int {
+func mul(ast *node) *value {
 	acc := num(ast.l.tok)
 	for !nilNode(ast.r) {
-		acc *= eval(ast.r)
+		rval := eval(ast.r)
+		if rval.typ != valNum {
+			fmt.Printf("Type error: unexpected type %s for *", rval.typ.String())
+		}
+		acc *= rval.numValue
 		ast = ast.r
 	}
-	return acc
+	return &value{
+		typ:      valNum,
+		numValue: acc,
+	}
 }
 
 // (exp base pow1 pow2 pow3) => base ^ (pow1 + pow2 + pow3)
-func exp(ast *node) int {
+func exp(ast *node) *value {
 	base := num(ast.l.tok)
 	pow := 0
 	for !nilNode(ast.r) {
-		pow += eval(ast.r)
+		rval := eval(ast.r)
+		if rval.typ != valNum {
+			fmt.Printf("Type error: unexpected type %s for exp", rval.typ.String())
+		}
+		pow += rval.numValue
 		ast = ast.r
 	}
 	result := base
@@ -50,12 +68,15 @@ func exp(ast *node) int {
 		result *= base
 		pow--
 	}
-	return result
+	return &value{
+		typ:      valNum,
+		numValue: result,
+	}
 }
 
-func eval(ast *node) int {
+func eval(ast *node) *value {
 	if ast == nil || ast.l == nil {
-		return 0
+		return &value{}
 	}
 	switch ast.l.tok.typ {
 	case tokIdentifier:
@@ -68,13 +89,16 @@ func eval(ast *node) int {
 			return exp(ast.r)
 		}
 	case tokNumber:
-		return num(ast.l.tok)
+		return &value{
+			typ:      valNum,
+			numValue: num(ast.l.tok),
+		}
 	case tokVoid:
 		return eval(ast.l)
 	default:
 		fmt.Printf("No such func %q\n", ast.l.tok)
 	}
-	return -1
+	return &value{}
 }
 
 var indent int
@@ -99,5 +123,5 @@ func dump(ast *node) {
 func main() {
 	ast := parse([]byte("(* 2 (+ 3 7) 5 9)"))
 	dump(ast)
-	println(eval(ast))
+	println(eval(ast).String())
 }
