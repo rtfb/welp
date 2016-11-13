@@ -19,6 +19,13 @@ func nilNode(n *node) bool {
 	return n.tok.typ == tokVoid && n.l == nil && n.r == nil
 }
 
+// (add 3 7) => 10
+func callUserFunc(f *callable, ast *node) *value {
+	// TODO: add checking. At least check if number of args is correct
+	f.body.r = ast
+	return eval(f.body)
+}
+
 var indent int
 
 func dump(ast *node) {
@@ -41,5 +48,11 @@ func dump(ast *node) {
 func main() {
 	ast := parse([]byte("(* 2 (+ 3 7) 5 9)"))
 	dump(ast)
+	println(eval(ast).String())
+	ast = parse([]byte("(fn add (a b) (+ a b))"))
+	println(eval(ast).String())
+	ast = parse([]byte("(add 3 7)"))
+	println(eval(ast).String())
+	ast = parse([]byte("(add 34 79)"))
 	println(eval(ast).String())
 }

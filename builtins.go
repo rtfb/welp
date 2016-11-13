@@ -4,17 +4,24 @@ import "fmt"
 
 type callable struct {
 	name    string
-	f       func(ast *node) *value
 	builtin bool
+
+	// pointer to a built-in func if it's a builtin
+	f func(ast *node) *value
+
+	// params and body of a user-defined func if it's no a builtin
+	params *node
+	body   *node
 }
 
-var funcTbl []callable
+var funcTbl []*callable
 
 func init() {
-	funcTbl = append(funcTbl, callable{name: "+", f: sum, builtin: true})
-	funcTbl = append(funcTbl, callable{name: "*", f: mul, builtin: true})
-	funcTbl = append(funcTbl, callable{name: "exp", f: exp, builtin: true})
-	funcTbl = append(funcTbl, callable{name: "eval", f: eval, builtin: true})
+	funcTbl = append(funcTbl, &callable{name: "+", f: sum, builtin: true})
+	funcTbl = append(funcTbl, &callable{name: "*", f: mul, builtin: true})
+	funcTbl = append(funcTbl, &callable{name: "exp", f: exp, builtin: true})
+	funcTbl = append(funcTbl, &callable{name: "eval", f: eval, builtin: true})
+	funcTbl = append(funcTbl, &callable{name: "fn", f: defun, builtin: true})
 }
 
 func sum(ast *node) *value {
@@ -80,7 +87,10 @@ func eval(ast *node) *value {
 	case tokIdentifier:
 		for _, f := range funcTbl {
 			if string(ast.l.tok.value) == f.name {
-				return f.f(ast.r)
+				if f.builtin {
+					return f.f(ast.r)
+				}
+				return callUserFunc(f, ast.r)
 			}
 		}
 		fmt.Printf("No such func %q\n", ast.l.tok)
@@ -95,4 +105,21 @@ func eval(ast *node) *value {
 		fmt.Printf("No such func %q\n", ast.l.tok)
 	}
 	return &value{}
+}
+
+// (fn add (a b) (+ a b)) => ADD
+func defun(ast *node) *value {
+	funcName := string(ast.l.tok.value)
+	params := ast.r.l
+	body := ast.r.r.l
+	funcTbl = append(funcTbl, &callable{
+		name:    funcName,
+		builtin: false,
+		params:  params,
+		body:    body,
+	})
+	return &value{
+		typ:      valFunc,
+		funcName: funcName,
+	}
 }

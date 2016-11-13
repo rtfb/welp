@@ -1,6 +1,9 @@
 package main
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 type valType int
 
@@ -18,16 +21,22 @@ func (v valType) String() string {
 const (
 	valUndef valType = iota
 	valNum
+	valFunc
 )
 
 type value struct {
 	typ      valType
 	numValue int
+	funcName string
 }
 
 func (v *value) String() string {
-	if v.typ == valNum {
+	switch v.typ {
+	case valNum:
 		return strconv.Itoa(v.numValue)
+	case valFunc:
+		return strings.ToUpper(v.funcName)
+	default:
+		return "<UNK>"
 	}
-	return "<UNK>"
 }
