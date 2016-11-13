@@ -37,7 +37,26 @@ func mul(ast *node) int {
 	return acc
 }
 
+// (exp base pow1 pow2 pow3) => base ^ (pow1 + pow2 + pow3)
+func exp(ast *node) int {
+	base := num(ast.l.tok)
+	pow := 0
+	for !nilNode(ast.r) {
+		pow += eval(ast.r)
+		ast = ast.r
+	}
+	result := base
+	for pow > 1 {
+		result *= base
+		pow--
+	}
+	return result
+}
+
 func eval(ast *node) int {
+	if ast == nil || ast.l == nil {
+		return 0
+	}
 	switch ast.l.tok.typ {
 	case tokIdentifier:
 		switch string(ast.l.tok.value) {
@@ -45,6 +64,8 @@ func eval(ast *node) int {
 			return sum(ast.r)
 		case "*":
 			return mul(ast.r)
+		case "exp":
+			return exp(ast.r)
 		}
 	case tokNumber:
 		return num(ast.l.tok)
