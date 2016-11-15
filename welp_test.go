@@ -20,7 +20,8 @@ func TestEval(t *testing.T) {
 		{"(exp 2 3 2 4)", 512},
 	}
 	for _, test := range tests {
-		got := eval(parse([]byte(test.input)))
+		env := newEnv()
+		got := eval(env, parse([]byte(test.input)))
 		if got.numValue != test.expected {
 			assert.Equal(t, got, test.expected, "eval(%q)", test.input)
 		}

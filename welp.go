@@ -6,12 +6,43 @@ import (
 	"strings"
 )
 
-func num(tok token) int {
-	n, err := strconv.Atoi(string(tok.value))
-	if err != nil {
-		panic(err)
+type environ struct {
+	vars map[string]*value
+}
+
+func newEnv() *environ {
+	return &environ{
+		vars: make(map[string]*value),
 	}
-	return n
+}
+
+func copyEnv(src *environ) *environ {
+	dst := newEnv()
+	for k, v := range src.vars {
+		dst.vars[k] = v
+	}
+	return dst
+}
+
+func num(env *environ, tok token) int {
+	switch tok.typ {
+	case tokNumber:
+		n, err := strconv.Atoi(string(tok.value))
+		if err != nil {
+			panic(err)
+		}
+		return n
+	case tokIdentifier:
+		val := env.vars[string(tok.value)]
+		if val.typ != valNum {
+			fmt.Printf("wrong type %s, expected %s", val.typ, valNum)
+			return -1
+		}
+		return val.numValue
+	default:
+		fmt.Printf("error looking up num for %s\n", tok.String())
+		panic("err")
+	}
 }
 
 // TODO fix parser to produce an actual nil instead of this node
@@ -20,10 +51,24 @@ func nilNode(n *node) bool {
 }
 
 // (add 3 7) => 10
-func callUserFunc(f *callable, ast *node) *value {
+func callUserFunc(env *environ, f *callable, ast *node) *value {
+	newFrame := copyEnv(env)
+	param := f.params
+	arg := ast
 	// TODO: add checking. At least check if number of args is correct
-	f.body.r = ast
-	return eval(f.body)
+	for param.r != nil && arg.r != nil {
+		nval := eval(env, arg)
+		if nval.typ != valNum {
+			fmt.Printf("Type error: unexpected type %s for %s\n", nval.typ.String(), f.name)
+		}
+		newFrame.vars[string(param.l.tok.value)] = &value{
+			typ:      valNum,
+			numValue: nval.numValue,
+		}
+		param = param.r
+		arg = arg.r
+	}
+	return eval(newFrame, f.body)
 }
 
 var indent int
@@ -46,13 +91,9 @@ func dump(ast *node) {
 }
 
 func main() {
-	ast := parse([]byte("(* 2 (+ 3 7) 5 9)"))
-	dump(ast)
-	println(eval(ast).String())
-	ast = parse([]byte("(fn add (a b) (+ a b))"))
-	println(eval(ast).String())
-	ast = parse([]byte("(add 3 7)"))
-	println(eval(ast).String())
-	ast = parse([]byte("(add 34 79)"))
-	println(eval(ast).String())
+	env := newEnv()
+	ast := parseS("(fn fib (n) (cond ((eq n 1) 1) ((eq n 2) 1) (t (+ (fib (- n 1)) (fib (- n 2))))))")
+	println(eval(env, ast).String())
+	ast = parseS("(fib 7)") // => 13
+	println(eval(env, ast).String())
 }
