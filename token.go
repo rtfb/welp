@@ -49,11 +49,11 @@ func getToken(input []byte, head int) (tok token, newHead int) {
 	if len(input) == 0 {
 		return token{typ: tokEOF}, 1
 	}
-	for head < len(input) && input[head] == ' ' {
+	for head < len(input) && (input[head] == ' ' || input[head] == '\n') {
 		head++
 	}
 	start := head
-	for head < len(input) && strings.IndexByte(" \t()", input[head]) == -1 {
+	for head < len(input) && strings.IndexByte(" \n\t()", input[head]) == -1 {
 		head++
 	}
 	if head >= len(input) && len(input[start:head]) == 0 {
