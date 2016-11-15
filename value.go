@@ -13,6 +13,10 @@ func (v valType) String() string {
 		return "integer"
 	case valUndef:
 		return "undefined"
+	case valFunc:
+		return "function"
+	case valBool:
+		return "bool"
 	default:
 		panic("unknown value type")
 	}
@@ -22,12 +26,14 @@ const (
 	valUndef valType = iota
 	valNum
 	valFunc
+	valBool
 )
 
 type value struct {
-	typ      valType
-	numValue int
-	funcName string
+	typ       valType
+	numValue  int
+	boolValue bool
+	funcName  string
 }
 
 func (v *value) String() string {
@@ -36,6 +42,11 @@ func (v *value) String() string {
 		return strconv.Itoa(v.numValue)
 	case valFunc:
 		return strings.ToUpper(v.funcName)
+	case valBool:
+		if v.boolValue {
+			return "T"
+		}
+		return "NIL"
 	default:
 		return "<UNK>"
 	}

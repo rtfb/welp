@@ -18,10 +18,14 @@ var funcTbl []*callable
 
 func init() {
 	funcTbl = append(funcTbl, &callable{name: "+", f: sum, builtin: true})
+	funcTbl = append(funcTbl, &callable{name: "-", f: sub, builtin: true})
 	funcTbl = append(funcTbl, &callable{name: "*", f: mul, builtin: true})
 	funcTbl = append(funcTbl, &callable{name: "exp", f: exp, builtin: true})
 	funcTbl = append(funcTbl, &callable{name: "eval", f: eval, builtin: true})
 	funcTbl = append(funcTbl, &callable{name: "fn", f: defun, builtin: true})
+	funcTbl = append(funcTbl, &callable{name: "cond", f: cond, builtin: true})
+	funcTbl = append(funcTbl, &callable{name: "eq", f: eq, builtin: true})
+	funcTbl = append(funcTbl, &callable{name: "t", f: t, builtin: true})
 }
 
 func sum(ast *node) *value {
@@ -29,9 +33,25 @@ func sum(ast *node) *value {
 	for !nilNode(ast.r) {
 		rval := eval(ast.r)
 		if rval.typ != valNum {
-			fmt.Printf("Type error: unexpected type %s for +", rval.typ.String())
+			fmt.Printf("Type error: unexpected type %s for +\n", rval.typ.String())
 		}
 		acc += rval.numValue
+		ast = ast.r
+	}
+	return &value{
+		typ:      valNum,
+		numValue: acc,
+	}
+}
+
+func sub(ast *node) *value {
+	acc := num(ast.l.tok)
+	for !nilNode(ast.r) {
+		rval := eval(ast.r)
+		if rval.typ != valNum {
+			fmt.Printf("Type error: unexpected type %s for -\n", rval.typ.String())
+		}
+		acc -= rval.numValue
 		ast = ast.r
 	}
 	return &value{
@@ -45,7 +65,7 @@ func mul(ast *node) *value {
 	for !nilNode(ast.r) {
 		rval := eval(ast.r)
 		if rval.typ != valNum {
-			fmt.Printf("Type error: unexpected type %s for *", rval.typ.String())
+			fmt.Printf("Type error: unexpected type %s for *\n", rval.typ.String())
 		}
 		acc *= rval.numValue
 		ast = ast.r
@@ -63,7 +83,7 @@ func exp(ast *node) *value {
 	for !nilNode(ast.r) {
 		rval := eval(ast.r)
 		if rval.typ != valNum {
-			fmt.Printf("Type error: unexpected type %s for exp", rval.typ.String())
+			fmt.Printf("Type error: unexpected type %s for exp\n", rval.typ.String())
 		}
 		pow += rval.numValue
 		ast = ast.r
@@ -105,6 +125,41 @@ func eval(ast *node) *value {
 		fmt.Printf("No such func %q\n", ast.l.tok)
 	}
 	return &value{}
+}
+
+// (eq 3 3) => T
+// (eq 3 4) => NIL
+func eq(ast *node) *value {
+	left := num(ast.l.tok)
+	right := num(ast.r.l.tok)
+	return &value{
+		typ:       valBool,
+		boolValue: left == right,
+	}
+}
+
+// (t (+ 4 6)) => 10
+func t(ast *node) *value {
+	return eval(ast.r)
+}
+
+// (cond
+//    ((eq x 1) 1)
+//    ((eq x 2) 1)
+//    (t (fib (- x 1))))
+func cond(ast *node) *value {
+	for ast.l != nil && ast.r != nil {
+		conditional := eval(ast.l.l)
+		if conditional.typ != valBool {
+			fmt.Printf("Type error: cond clause evaluates to %s, not bool\n",
+				conditional.typ.String())
+		}
+		if conditional.boolValue {
+			return eval(ast.l.r)
+		}
+		ast = ast.r
+	}
+	return nil
 }
 
 // (fn add (a b) (+ a b)) => ADD

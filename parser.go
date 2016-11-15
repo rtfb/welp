@@ -71,3 +71,7 @@ func parse(input []byte) *node {
 	p.rparse()
 	return p.tree
 }
+
+func parseS(input string) *node {
+	return parse([]byte(input))
+}
