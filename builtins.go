@@ -25,7 +25,6 @@ func init() {
 	funcTbl = append(funcTbl, &callable{name: "fn", f: defun, builtin: true})
 	funcTbl = append(funcTbl, &callable{name: "cond", f: cond, builtin: true})
 	funcTbl = append(funcTbl, &callable{name: "eq", f: eq, builtin: true})
-	funcTbl = append(funcTbl, &callable{name: "t", f: t, builtin: true})
 }
 
 func sum(env *environ, expr *node) *value {
@@ -114,6 +113,18 @@ func eval(env *environ, expr *node) *value {
 	switch expr.l.tok.typ {
 	case tokIdentifier:
 		identName := string(expr.l.tok.value)
+		if identName == "t" {
+			return &value{
+				typ:       valBool,
+				boolValue: true,
+			}
+		}
+		if identName == "nil" {
+			return &value{
+				typ:       valBool,
+				boolValue: false,
+			}
+		}
 		for _, f := range funcTbl {
 			if identName == f.name {
 				if f.builtin {
@@ -150,11 +161,6 @@ func eq(env *environ, expr *node) *value {
 	}
 }
 
-// (t (+ 4 6)) => 10
-func t(env *environ, expr *node) *value {
-	return eval(env, expr)
-}
-
 // (cond
 //    ((eq x 1) 1)
 //    ((eq x 2) 1)
@@ -171,7 +177,7 @@ func cond(env *environ, expr *node) *value {
 		}
 		expr = expr.r
 	}
-	return eval(env, expr)
+	return eval(env, expr.l.r)
 }
 
 // (fn add (a b) (+ a b)) => ADD
