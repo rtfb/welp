@@ -8,11 +8,10 @@ type node struct {
 }
 
 type parser struct {
-	tree      *node
-	head      *node
-	done      bool
-	input     []byte
-	inputHead int
+	tree   *node
+	head   *node
+	done   bool
+	tokzer *tokenizer
 }
 
 func (p *parser) rparse() {
@@ -21,7 +20,7 @@ func (p *parser) rparse() {
 	}
 	var tok token
 	for tok.typ != tokEOF {
-		tok, p.inputHead = getToken(p.input, p.inputHead)
+		tok = <-p.tokzer.tok
 		var treeNode *node
 		switch tok.typ {
 		case tokOpenParen:
@@ -66,8 +65,9 @@ func (p *parser) rparse() {
 
 func parse(input []byte) *node {
 	p := &parser{
-		input: input,
+		tokzer: newTokenizer(input),
 	}
+	go p.tokzer.onStart()
 	p.rparse()
 	return p.tree
 }

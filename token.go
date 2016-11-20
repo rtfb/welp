@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 )
@@ -20,6 +19,8 @@ func (t tokType) String() string {
 		return "tokNumber"
 	case tokIdentifier:
 		return "tokIdentifier"
+	case tokString:
+		return "tokString"
 	case tokEOF:
 		return "tokEOF"
 	default:
@@ -42,52 +43,100 @@ const (
 	tokCloseParen
 	tokNumber
 	tokIdentifier
+	tokString
 	tokEOF
 )
 
-func getToken(input []byte, head int) (tok token, newHead int) {
-	if len(input) == 0 {
-		return token{typ: tokEOF}, 1
-	}
-	for head < len(input) && (input[head] == ' ' || input[head] == '\n') {
-		head++
-	}
-	start := head
-	for head < len(input) && strings.IndexByte(" \n\t()", input[head]) == -1 {
-		head++
-	}
-	if head >= len(input) && len(input[start:head]) == 0 {
-		return token{typ: tokEOF}, -1
-	}
-	if len(input[start:head]) == 0 {
-		switch input[head] {
-		case '(':
-			return token{typ: tokOpenParen, value: []byte{input[head]}}, head + 1
-		case ')':
-			return token{typ: tokCloseParen, value: []byte{input[head]}}, head + 1
-		default:
-			return token{typ: tokEOF}, -1
-		}
-	}
-	allDigits := true
-	for _, c := range input[start:head] {
-		if strings.IndexByte("0123456789", c) == -1 {
-			allDigits = false
-		}
-	}
-	tType := tokIdentifier
-	if allDigits {
-		tType = tokNumber
-	}
-	return token{
-		typ:   tType,
-		value: input[start:head],
-	}, head
+type tokenizer struct {
+	input []byte
+	head  int
+	tok   chan token
 }
 
-func tokEqual(a, b token) bool {
-	if a.typ != b.typ {
-		return false
+func newTokenizer(input []byte) *tokenizer {
+	return &tokenizer{
+		input: input,
+		tok:   make(chan token),
 	}
-	return bytes.Equal(a.value, b.value)
+}
+
+func (t *tokenizer) onStart() {
+	for t.head < len(t.input) {
+		h := t.input[t.head]
+		switch {
+		case h >= '0' && h <= '9':
+			t.onNumber()
+		case h == ' ' || h == '\t' || h == '\n':
+			t.head++
+		case h == '(':
+			t.onOpenParen()
+		case h == ')':
+			t.onCloseParen()
+		case h == '"':
+			t.onDoublequote()
+		default:
+			t.onChar()
+		}
+	}
+	t.tok <- token{typ: tokEOF}
+}
+
+func (t *tokenizer) onNumber() {
+	var tail int
+	var h byte
+	for tail, h = range t.input[t.head:] {
+		if h < '0' || h > '9' {
+			if h != '.' {
+				break
+			}
+		}
+	}
+	tail = t.head + tail
+	t.tok <- token{typ: tokNumber, value: t.input[t.head:tail]}
+	t.head = tail
+	t.onStart()
+}
+
+func (t *tokenizer) onChar() {
+	var tail int
+	var h byte
+	for tail, h = range t.input[t.head:] {
+		if strings.IndexByte(" \n\t()\"", h) != -1 {
+			break
+		}
+	}
+	tail = t.head + tail
+	t.tok <- token{typ: tokIdentifier, value: t.input[t.head:tail]}
+	t.head = tail
+	t.onStart()
+}
+
+func (t *tokenizer) onOpenParen() {
+	t.tok <- token{typ: tokOpenParen, value: []byte{'('}}
+	t.head++
+	t.onStart()
+}
+
+func (t *tokenizer) onCloseParen() {
+	t.tok <- token{typ: tokCloseParen, value: []byte{')'}}
+	t.head++
+	t.onStart()
+}
+
+func (t *tokenizer) onDoublequote() {
+	var tail int
+	var h byte
+	t.head++
+	for tail, h = range t.input[t.head:] {
+		if h == '"' {
+			if tail > 1 && t.input[tail-1] == '\\' {
+				continue
+			}
+			break
+		}
+	}
+	tail = t.head + tail
+	t.tok <- token{typ: tokString, value: t.input[t.head:tail]}
+	t.head = tail + 1
+	t.onStart()
 }
