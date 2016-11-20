@@ -51,10 +51,10 @@ func nilNode(n *node) bool {
 }
 
 // (add 3 7) => 10
-func callUserFunc(env *environ, f *callable, ast *node) *value {
+func callUserFunc(env *environ, f *callable, expr *node) *value {
 	newFrame := copyEnv(env)
 	param := f.params
-	arg := ast
+	arg := expr
 	// TODO: add checking. At least check if number of args is correct
 	for param.r != nil && arg.r != nil {
 		nval := eval(env, arg)
@@ -73,32 +73,32 @@ func callUserFunc(env *environ, f *callable, ast *node) *value {
 
 var indent int
 
-func dump(ast *node) {
+func dump(expr *node) {
 	indent += 4
 	prefix := strings.Repeat(" ", indent)
-	if ast.tok.typ == tokVoid {
+	if expr.tok.typ == tokVoid {
 		fmt.Printf("%s-\n", prefix)
 	} else {
-		fmt.Printf("%stok: %s\n", prefix, ast.tok.value)
+		fmt.Printf("%stok: %s\n", prefix, expr.tok.value)
 	}
-	if ast.l != nil {
-		dump(ast.l)
+	if expr.l != nil {
+		dump(expr.l)
 	}
-	if ast.r != nil {
-		dump(ast.r)
+	if expr.r != nil {
+		dump(expr.r)
 	}
 	indent -= 4
 }
 
 func main() {
 	env := newEnv()
-	ast := parseS(`
+	expr := parseS(`
 (fn fib (n)
   (cond
     ((eq n 1) 1)
     ((eq n 2) 1)
     (t (+ (fib (- n 1)) (fib (- n 2))))))`)
-	println(eval(env, ast).String())
-	ast = parseS("(fib 7)") // => 13
-	println(eval(env, ast).String())
+	println(eval(env, expr).String())
+	expr = parseS("(fib 7)") // => 13
+	println(eval(env, expr).String())
 }

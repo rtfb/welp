@@ -7,7 +7,7 @@ type callable struct {
 	builtin bool
 
 	// pointer to a built-in func if it's a builtin
-	f func(env *environ, ast *node) *value
+	f func(env *environ, expr *node) *value
 
 	// params and body of a user-defined func if it's no a builtin
 	params *node
@@ -28,19 +28,19 @@ func init() {
 	funcTbl = append(funcTbl, &callable{name: "t", f: t, builtin: true})
 }
 
-func sum(env *environ, ast *node) *value {
-	lval := eval(env, ast)
+func sum(env *environ, expr *node) *value {
+	lval := eval(env, expr)
 	if lval.typ != valNum {
 		fmt.Printf("Type error: unexpected type %s for +\n", lval.typ.String())
 	}
 	acc := lval.numValue
-	for !nilNode(ast.r) {
-		rval := eval(env, ast.r)
+	for !nilNode(expr.r) {
+		rval := eval(env, expr.r)
 		if rval.typ != valNum {
 			fmt.Printf("Type error: unexpected type %s for +\n", rval.typ.String())
 		}
 		acc += rval.numValue
-		ast = ast.r
+		expr = expr.r
 	}
 	return &value{
 		typ:      valNum,
@@ -48,19 +48,19 @@ func sum(env *environ, ast *node) *value {
 	}
 }
 
-func sub(env *environ, ast *node) *value {
-	lval := eval(env, ast)
+func sub(env *environ, expr *node) *value {
+	lval := eval(env, expr)
 	if lval.typ != valNum {
 		fmt.Printf("Type error: unexpected type %s for -\n", lval.typ.String())
 	}
 	acc := lval.numValue
-	for !nilNode(ast.r) {
-		rval := eval(env, ast.r)
+	for !nilNode(expr.r) {
+		rval := eval(env, expr.r)
 		if rval.typ != valNum {
 			fmt.Printf("Type error: unexpected type %s for -\n", rval.typ.String())
 		}
 		acc -= rval.numValue
-		ast = ast.r
+		expr = expr.r
 	}
 	return &value{
 		typ:      valNum,
@@ -68,15 +68,15 @@ func sub(env *environ, ast *node) *value {
 	}
 }
 
-func mul(env *environ, ast *node) *value {
-	acc := num(env, ast.l.tok)
-	for !nilNode(ast.r) {
-		rval := eval(env, ast.r)
+func mul(env *environ, expr *node) *value {
+	acc := num(env, expr.l.tok)
+	for !nilNode(expr.r) {
+		rval := eval(env, expr.r)
 		if rval.typ != valNum {
 			fmt.Printf("Type error: unexpected type %s for *\n", rval.typ.String())
 		}
 		acc *= rval.numValue
-		ast = ast.r
+		expr = expr.r
 	}
 	return &value{
 		typ:      valNum,
@@ -85,16 +85,16 @@ func mul(env *environ, ast *node) *value {
 }
 
 // (exp base pow1 pow2 pow3) => base ^ (pow1 + pow2 + pow3)
-func exp(env *environ, ast *node) *value {
-	base := num(env, ast.l.tok)
+func exp(env *environ, expr *node) *value {
+	base := num(env, expr.l.tok)
 	pow := 0
-	for !nilNode(ast.r) {
-		rval := eval(env, ast.r)
+	for !nilNode(expr.r) {
+		rval := eval(env, expr.r)
 		if rval.typ != valNum {
 			fmt.Printf("Type error: unexpected type %s for exp\n", rval.typ.String())
 		}
 		pow += rval.numValue
-		ast = ast.r
+		expr = expr.r
 	}
 	result := base
 	for pow > 1 {
@@ -107,43 +107,43 @@ func exp(env *environ, ast *node) *value {
 	}
 }
 
-func eval(env *environ, ast *node) *value {
-	if ast == nil || ast.l == nil {
+func eval(env *environ, expr *node) *value {
+	if expr == nil || expr.l == nil {
 		return &value{}
 	}
-	switch ast.l.tok.typ {
+	switch expr.l.tok.typ {
 	case tokIdentifier:
-		identName := string(ast.l.tok.value)
+		identName := string(expr.l.tok.value)
 		for _, f := range funcTbl {
 			if identName == f.name {
 				if f.builtin {
-					return f.f(env, ast.r)
+					return f.f(env, expr.r)
 				}
-				return callUserFunc(env, f, ast.r)
+				return callUserFunc(env, f, expr.r)
 			}
 		}
 		if v, ok := env.vars[identName]; ok {
 			return v
 		}
-		fmt.Printf("No such symbol %q\n", ast.l.tok)
+		fmt.Printf("No such symbol %q\n", expr.l.tok)
 	case tokNumber:
 		return &value{
 			typ:      valNum,
-			numValue: num(env, ast.l.tok),
+			numValue: num(env, expr.l.tok),
 		}
 	case tokVoid:
-		return eval(env, ast.l)
+		return eval(env, expr.l)
 	default:
-		fmt.Printf("Unknown token type for %q\n", ast.l.tok)
+		fmt.Printf("Unknown token type for %q\n", expr.l.tok)
 	}
 	return &value{}
 }
 
 // (eq 3 3) => T
 // (eq 3 4) => NIL
-func eq(env *environ, ast *node) *value {
-	left := num(env, ast.l.tok)
-	right := num(env, ast.r.l.tok)
+func eq(env *environ, expr *node) *value {
+	left := num(env, expr.l.tok)
+	right := num(env, expr.r.l.tok)
 	return &value{
 		typ:       valBool,
 		boolValue: left == right,
@@ -151,34 +151,34 @@ func eq(env *environ, ast *node) *value {
 }
 
 // (t (+ 4 6)) => 10
-func t(env *environ, ast *node) *value {
-	return eval(env, ast)
+func t(env *environ, expr *node) *value {
+	return eval(env, expr)
 }
 
 // (cond
 //    ((eq x 1) 1)
 //    ((eq x 2) 1)
 //    (t (fib (- x 1))))
-func cond(env *environ, ast *node) *value {
-	for ast.l != nil && ast.r.r != nil {
-		conditional := eval(env, ast.l)
+func cond(env *environ, expr *node) *value {
+	for expr.l != nil && expr.r.r != nil {
+		conditional := eval(env, expr.l)
 		if conditional.typ != valBool {
 			fmt.Printf("Type error: cond clause evaluates to %s, not bool\n",
 				conditional.typ.String())
 		}
 		if conditional.boolValue {
-			return eval(env, ast.l.r)
+			return eval(env, expr.l.r)
 		}
-		ast = ast.r
+		expr = expr.r
 	}
-	return eval(env, ast)
+	return eval(env, expr)
 }
 
 // (fn add (a b) (+ a b)) => ADD
-func defun(env *environ, ast *node) *value {
-	funcName := string(ast.l.tok.value)
-	params := ast.r.l
-	body := ast.r.r.l
+func defun(env *environ, expr *node) *value {
+	funcName := string(expr.l.tok.value)
+	params := expr.r.l
+	body := expr.r.r.l
 	funcTbl = append(funcTbl, &callable{
 		name:    funcName,
 		builtin: false,
