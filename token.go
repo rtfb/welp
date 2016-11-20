@@ -94,7 +94,6 @@ func (t *tokenizer) onNumber() {
 	tail = t.head + tail
 	t.tok <- token{typ: tokNumber, value: t.input[t.head:tail]}
 	t.head = tail
-	t.onStart()
 }
 
 func (t *tokenizer) onChar() {
@@ -108,19 +107,16 @@ func (t *tokenizer) onChar() {
 	tail = t.head + tail
 	t.tok <- token{typ: tokIdentifier, value: t.input[t.head:tail]}
 	t.head = tail
-	t.onStart()
 }
 
 func (t *tokenizer) onOpenParen() {
 	t.tok <- token{typ: tokOpenParen, value: []byte{'('}}
 	t.head++
-	t.onStart()
 }
 
 func (t *tokenizer) onCloseParen() {
 	t.tok <- token{typ: tokCloseParen, value: []byte{')'}}
 	t.head++
-	t.onStart()
 }
 
 func (t *tokenizer) onDoublequote() {
@@ -138,5 +134,4 @@ func (t *tokenizer) onDoublequote() {
 	tail = t.head + tail
 	t.tok <- token{typ: tokString, value: t.input[t.head:tail]}
 	t.head = tail + 1
-	t.onStart()
 }
