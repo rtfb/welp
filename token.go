@@ -31,10 +31,11 @@ func (t tokType) String() string {
 type token struct {
 	typ   tokType
 	value []byte
+	pos   int
 }
 
 func (t *token) String() string {
-	return fmt.Sprintf("{%s, %q}", t.typ.String(), t.value)
+	return fmt.Sprintf("{%s, %q (P%d)}", t.typ.String(), t.value, t.pos)
 }
 
 const (
@@ -78,7 +79,7 @@ func (t *tokenizer) onStart() {
 			t.onChar()
 		}
 	}
-	t.tok <- token{typ: tokEOF}
+	t.tok <- token{typ: tokEOF, pos: len(t.input)}
 }
 
 func (t *tokenizer) onNumber() {
@@ -92,7 +93,7 @@ func (t *tokenizer) onNumber() {
 		}
 	}
 	tail = t.head + tail
-	t.tok <- token{typ: tokNumber, value: t.input[t.head:tail]}
+	t.tok <- token{typ: tokNumber, value: t.input[t.head:tail], pos: t.head}
 	t.head = tail
 }
 
@@ -105,17 +106,17 @@ func (t *tokenizer) onChar() {
 		}
 	}
 	tail = t.head + tail
-	t.tok <- token{typ: tokIdentifier, value: t.input[t.head:tail]}
+	t.tok <- token{typ: tokIdentifier, value: t.input[t.head:tail], pos: t.head}
 	t.head = tail
 }
 
 func (t *tokenizer) onOpenParen() {
-	t.tok <- token{typ: tokOpenParen, value: []byte{'('}}
+	t.tok <- token{typ: tokOpenParen, value: []byte{'('}, pos: t.head}
 	t.head++
 }
 
 func (t *tokenizer) onCloseParen() {
-	t.tok <- token{typ: tokCloseParen, value: []byte{')'}}
+	t.tok <- token{typ: tokCloseParen, value: []byte{')'}, pos: t.head}
 	t.head++
 }
 
@@ -132,6 +133,6 @@ func (t *tokenizer) onDoublequote() {
 		}
 	}
 	tail = t.head + tail
-	t.tok <- token{typ: tokString, value: t.input[t.head:tail]}
+	t.tok <- token{typ: tokString, value: t.input[t.head:tail], pos: t.head}
 	t.head = tail + 1
 }

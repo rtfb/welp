@@ -80,7 +80,7 @@ func dump(expr *node) {
 	if expr.tok.typ == tokVoid {
 		fmt.Printf("%s-\n", prefix)
 	} else {
-		fmt.Printf("%stok: %s\n", prefix, expr.tok.value)
+		fmt.Printf("%stok: %s\n", prefix, expr.tok.String())
 	}
 	if expr.l != nil {
 		dump(expr.l)
@@ -93,13 +93,13 @@ func dump(expr *node) {
 
 func main() {
 	env := NewEnv()
-	expr := ParseS(`
+	expr := ParseString(`
 (fn fib (n)
   (cond
     ((eq n 1) 1)
     ((eq n 2) 1)
     (t (+ (fib (- n 1)) (fib (- n 2))))))`)
 	println(eval(env, expr).String())
-	expr = ParseS("(fib 7)") // => 13
+	expr = ParseString("(fib 7)") // => 13
 	println(eval(env, expr).String())
 }
