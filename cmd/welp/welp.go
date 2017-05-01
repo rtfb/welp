@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 
@@ -14,12 +15,16 @@ func doFile(name string) error {
 		return err
 	}
 	env := welp.NewEnv()
-	ch, err := welp.ParseStream(f)
-	if err != nil {
-		return err
+	ch := welp.ParseStream(f)
+	if ch == nil {
+		return errors.New("ch is nil")
 	}
 	for e := range ch {
-		println(welp.Eval(env, e).String())
+		if e.Err != nil {
+			println("Error: ", e.Err)
+		} else {
+			println(welp.Eval(env, e).String())
+		}
 	}
 	return nil
 }

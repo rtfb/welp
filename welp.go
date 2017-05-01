@@ -47,46 +47,46 @@ func num(env *environ, tok token) int {
 }
 
 // TODO fix parser to produce an actual nil instead of this node
-func nilNode(n *node) bool {
-	return n.tok.typ == tokVoid && n.l == nil && n.r == nil
+func nilNode(n *Node) bool {
+	return n.Tok.typ == tokVoid && n.L == nil && n.R == nil
 }
 
 // (add 3 7) => 10
-func callUserFunc(env *environ, f *callable, expr *node) *value {
+func callUserFunc(env *environ, f *callable, expr *Node) *value {
 	newFrame := copyEnv(env)
 	param := f.params
 	arg := expr
 	// TODO: add checking. At least check if number of args is correct
-	for param.r != nil && arg.r != nil {
+	for param.R != nil && arg.R != nil {
 		nval := eval(env, arg)
 		if nval.typ != valNum {
 			fmt.Printf("Type error: unexpected type %s for %s\n", nval.typ.String(), f.name)
 		}
-		newFrame.vars[string(param.l.tok.value)] = &value{
+		newFrame.vars[string(param.L.Tok.value)] = &value{
 			typ:      valNum,
 			numValue: nval.numValue,
 		}
-		param = param.r
-		arg = arg.r
+		param = param.R
+		arg = arg.R
 	}
 	return eval(newFrame, f.body)
 }
 
 var indent int
 
-func dump(expr *node) {
+func dump(expr *Node) {
 	indent += 4
 	prefix := strings.Repeat(" ", indent)
-	if expr.tok.typ == tokVoid {
+	if expr.Tok.typ == tokVoid {
 		fmt.Printf("%s-\n", prefix)
 	} else {
-		fmt.Printf("%stok: %s\n", prefix, expr.tok.String())
+		fmt.Printf("%stok: %s\n", prefix, expr.Tok.String())
 	}
-	if expr.l != nil {
-		dump(expr.l)
+	if expr.L != nil {
+		dump(expr.L)
 	}
-	if expr.r != nil {
-		dump(expr.r)
+	if expr.R != nil {
+		dump(expr.R)
 	}
 	indent -= 4
 }

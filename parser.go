@@ -1,20 +1,22 @@
 package welp
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 )
 
-type node struct {
-	tok  token
-	l, r *node
+type Node struct {
+	Tok  token
+	L, R *Node
+	Err  error
 }
 
 // Parser contains the state of the parser.
 type Parser struct {
-	tree   *node
-	head   *node
+	tree   *Node
+	head   *Node
 	depth  int
 	done   bool
 	tokzer *tokenizer
@@ -27,26 +29,26 @@ func (p *Parser) rparse() {
 	var tok token
 	for tok.typ != tokEOF {
 		tok = <-p.tokzer.tok
-		var treeNode *node
+		var treeNode *Node
 		switch tok.typ {
 		case tokOpenParen:
 			p.depth++
-			var branchPoint *node
+			var branchPoint *Node
 			if p.tree == nil {
-				p.tree = &node{}
+				p.tree = &Node{}
 				p.head = p.tree
 			} else {
 				branchPoint = p.head
-				p.head.l = &node{}
-				p.head = p.head.l
+				p.head.L = &Node{}
+				p.head = p.head.L
 			}
 			p.rparse()
 			if p.done {
 				return
 			}
 			if branchPoint != nil {
-				branchPoint.r = &node{}
-				p.head = branchPoint.r
+				branchPoint.R = &Node{}
+				p.head = branchPoint.R
 			}
 			continue
 		case tokCloseParen:
@@ -56,8 +58,8 @@ func (p *Parser) rparse() {
 			}
 			return
 		case tokIdentifier, tokNumber:
-			treeNode = &node{
-				tok: tok,
+			treeNode = &Node{
+				Tok: tok,
 			}
 		case tokEOF:
 			p.done = true
@@ -68,9 +70,9 @@ func (p *Parser) rparse() {
 		if p.head == nil {
 			println("err1")
 		}
-		p.head.l = treeNode
-		p.head.r = &node{}
-		p.head = p.head.r
+		p.head.L = treeNode
+		p.head.R = &Node{}
+		p.head = p.head.R
 	}
 }
 
@@ -87,7 +89,7 @@ func (p *Parser) Start() {
 }
 
 // Parse parses source code into an expression tree.
-func (p *Parser) Parse() (node *node, n int) {
+func (p *Parser) Parse() (node *Node, n int) {
 	p.tree = nil
 	p.done = false
 	p.rparse()
@@ -95,7 +97,7 @@ func (p *Parser) Parse() (node *node, n int) {
 }
 
 // ParseString is a convenience func that parses a string.
-func ParseString(input string) *node {
+func ParseString(input string) *Node {
 	p := NewParser([]byte(input))
 	n, _ := p.Parse()
 	return n
@@ -103,22 +105,23 @@ func ParseString(input string) *node {
 
 // ParseStream reads and parses all expressions from a given stream and sends
 // them down the channel.
-func ParseStream(r io.Reader) (<-chan *node, error) {
+func ParseStream(r io.Reader) <-chan *Node {
 	allBytes, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	p := NewParser(allBytes)
 	p.Start()
 	n := 0
-	ch := make(chan *node)
+	ch := make(chan *Node)
 	go func() {
 		for n < len(allBytes) {
 			node, newN := p.Parse()
 			if newN == n {
-				// TODO: fix error handling
-				// return ch, errors.New("newN == n, can't progress")
-				panic("newN == n, can't progress")
+				ch <- &Node{
+					Err: errors.New("newN == n, can't progress"),
+				}
+				break
 			}
 			if node == nil {
 				break
@@ -128,5 +131,5 @@ func ParseStream(r io.Reader) (<-chan *node, error) {
 		}
 		close(ch)
 	}()
-	return ch, nil
+	return ch
 }
