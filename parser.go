@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"strings"
 )
 
 type Node struct {
@@ -29,6 +29,9 @@ func (p *Parser) rparse() {
 	var tok token
 	for tok.typ != tokEOF {
 		tok = <-p.tokzer.tok
+		if tok.err != nil && tok.typ != tokEOF {
+			panic(tok.err) // TODO: improve error handling
+		}
 		var treeNode *Node
 		switch tok.typ {
 		case tokOpenParen:
@@ -77,9 +80,9 @@ func (p *Parser) rparse() {
 }
 
 // NewParser constructs a Parser.
-func NewParser(input []byte) *Parser {
+func NewParser(r io.Reader) *Parser {
 	return &Parser{
-		tokzer: newTokenizer(input),
+		tokzer: newTokenizer(r),
 	}
 }
 
@@ -98,7 +101,7 @@ func (p *Parser) Parse() (node *Node, n int) {
 
 // ParseString is a convenience func that parses a string.
 func ParseString(input string) *Node {
-	p := NewParser([]byte(input))
+	p := NewParser(strings.NewReader(input))
 	n, _ := p.Parse()
 	return n
 }
@@ -106,16 +109,12 @@ func ParseString(input string) *Node {
 // ParseStream reads and parses all expressions from a given stream and sends
 // them down the channel.
 func ParseStream(r io.Reader) <-chan *Node {
-	allBytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil
-	}
-	p := NewParser(allBytes)
+	p := NewParser(r)
 	p.Start()
 	n := 0
 	ch := make(chan *Node)
 	go func() {
-		for n < len(allBytes) {
+		for {
 			node, newN := p.Parse()
 			if newN == n {
 				ch <- &Node{

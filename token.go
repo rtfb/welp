@@ -1,7 +1,10 @@
 package welp
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -32,6 +35,7 @@ type token struct {
 	typ   tokType
 	value []byte
 	pos   int
+	err   error
 }
 
 func (t *token) String() string {
@@ -49,65 +53,82 @@ const (
 )
 
 type tokenizer struct {
-	input []byte
-	head  int
-	tok   chan token
+	r    *bufio.Reader
+	head int
+	tok  chan token
 }
 
-func newTokenizer(input []byte) *tokenizer {
+func newTokenizer(r io.Reader) *tokenizer {
 	return &tokenizer{
-		input: input,
-		tok:   make(chan token),
+		r:   bufio.NewReader(r),
+		tok: make(chan token),
 	}
 }
 
 func (t *tokenizer) onStart() {
-	for t.head < len(t.input) {
-		h := t.input[t.head]
+	var err error
+	var b byte
+	for {
+		b, err = t.r.ReadByte()
+		if err != nil {
+			break
+		}
 		switch {
-		case h >= '0' && h <= '9':
+		case b >= '0' && b <= '9':
+			t.r.UnreadByte()
 			t.onNumber()
-		case h == ' ' || h == '\t' || h == '\n':
+		case b == ' ' || b == '\t' || b == '\n' || b == '\r':
 			t.head++
-		case h == '(':
+		case b == '(':
 			t.onOpenParen()
-		case h == ')':
+		case b == ')':
 			t.onCloseParen()
-		case h == '"':
+		case b == '"':
 			t.onDoublequote()
 		default:
+			t.r.UnreadByte()
 			t.onChar()
 		}
 	}
-	t.tok <- token{typ: tokEOF, pos: len(t.input)}
+	t.tok <- token{typ: tokEOF, pos: t.head, err: err}
 }
 
 func (t *tokenizer) onNumber() {
-	var tail int
-	var h byte
-	for tail, h = range t.input[t.head:] {
-		if h < '0' || h > '9' {
-			if h != '.' {
-				break
-			}
+	var buf bytes.Buffer
+	var b byte
+	var err error
+	for {
+		b, err = t.r.ReadByte()
+		if err != nil {
+			break
 		}
+		if (b < '0' || b > '9') && b != '.' {
+			t.r.UnreadByte()
+			break
+		}
+		err = buf.WriteByte(b)
 	}
-	tail = t.head + tail
-	t.tok <- token{typ: tokNumber, value: t.input[t.head:tail], pos: t.head}
-	t.head = tail
+	t.tok <- token{typ: tokNumber, value: buf.Bytes(), pos: t.head, err: err}
+	t.head += buf.Len()
 }
 
 func (t *tokenizer) onChar() {
-	var tail int
-	var h byte
-	for tail, h = range t.input[t.head:] {
-		if strings.IndexByte(" \n\t()\"", h) != -1 {
+	var buf bytes.Buffer
+	var b byte
+	var err error
+	for {
+		b, err = t.r.ReadByte()
+		if err != nil {
 			break
 		}
+		if strings.IndexByte(" \n\t()\"", b) != -1 {
+			t.r.UnreadByte()
+			break
+		}
+		err = buf.WriteByte(b)
 	}
-	tail = t.head + tail
-	t.tok <- token{typ: tokIdentifier, value: t.input[t.head:tail], pos: t.head}
-	t.head = tail
+	t.tok <- token{typ: tokIdentifier, value: buf.Bytes(), pos: t.head, err: err}
+	t.head += buf.Len()
 }
 
 func (t *tokenizer) onOpenParen() {
@@ -121,18 +142,24 @@ func (t *tokenizer) onCloseParen() {
 }
 
 func (t *tokenizer) onDoublequote() {
-	var tail int
-	var h byte
-	t.head++
-	for tail, h = range t.input[t.head:] {
-		if h == '"' {
-			if tail > 1 && t.input[tail-1] == '\\' {
-				continue
-			}
+	var buf bytes.Buffer
+	var b, lastB byte
+	var err error
+	for {
+		b, err = t.r.ReadByte()
+		if err != nil {
 			break
 		}
+		if b == '"' {
+			if lastB == '\\' {
+				continue
+			}
+			t.r.UnreadByte()
+			break
+		}
+		lastB = b
+		err = buf.WriteByte(b)
 	}
-	tail = t.head + tail
-	t.tok <- token{typ: tokString, value: t.input[t.head:tail], pos: t.head}
-	t.head = tail + 1
+	t.tok <- token{typ: tokString, value: buf.Bytes(), pos: t.head, err: err}
+	t.head += buf.Len()
 }
