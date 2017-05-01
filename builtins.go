@@ -1,4 +1,4 @@
-package main
+package welp
 
 import "fmt"
 
@@ -104,6 +104,11 @@ func exp(env *environ, expr *node) *value {
 		typ:      valNum,
 		numValue: result,
 	}
+}
+
+// Eval evals.
+func Eval(env *environ, expr *node) *value {
+	return eval(env, expr)
 }
 
 func eval(env *environ, expr *node) *value {

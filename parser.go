@@ -1,4 +1,4 @@
-package main
+package welp
 
 import "fmt"
 
@@ -63,7 +63,8 @@ func (p *parser) rparse() {
 	}
 }
 
-func parse(input []byte) *node {
+// Parse parses source code into an expression tree.
+func Parse(input []byte) *node {
 	p := &parser{
 		tokzer: newTokenizer(input),
 	}
@@ -72,6 +73,7 @@ func parse(input []byte) *node {
 	return p.tree
 }
 
-func parseS(input string) *node {
-	return parse([]byte(input))
+// ParseS is a convenience func that parses a string.
+func ParseS(input string) *node {
+	return Parse([]byte(input))
 }

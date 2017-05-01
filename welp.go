@@ -1,4 +1,4 @@
-package main
+package welp
 
 import (
 	"fmt"
@@ -10,14 +10,15 @@ type environ struct {
 	vars map[string]*value
 }
 
-func newEnv() *environ {
+// NewEnv creates an environment.
+func NewEnv() *environ {
 	return &environ{
 		vars: make(map[string]*value),
 	}
 }
 
 func copyEnv(src *environ) *environ {
-	dst := newEnv()
+	dst := NewEnv()
 	for k, v := range src.vars {
 		dst.vars[k] = v
 	}
@@ -91,14 +92,14 @@ func dump(expr *node) {
 }
 
 func main() {
-	env := newEnv()
-	expr := parseS(`
+	env := NewEnv()
+	expr := ParseS(`
 (fn fib (n)
   (cond
     ((eq n 1) 1)
     ((eq n 2) 1)
     (t (+ (fib (- n 1)) (fib (- n 2))))))`)
 	println(eval(env, expr).String())
-	expr = parseS("(fib 7)") // => 13
+	expr = ParseS("(fib 7)") // => 13
 	println(eval(env, expr).String())
 }
