@@ -6,18 +6,18 @@ import (
 	"strings"
 )
 
-type environ struct {
+type Environ struct {
 	vars map[string]*value
 }
 
 // NewEnv creates an environment.
-func NewEnv() *environ {
-	return &environ{
+func NewEnv() *Environ {
+	return &Environ{
 		vars: make(map[string]*value),
 	}
 }
 
-func copyEnv(src *environ) *environ {
+func copyEnv(src *Environ) *Environ {
 	dst := NewEnv()
 	for k, v := range src.vars {
 		dst.vars[k] = v
@@ -25,7 +25,7 @@ func copyEnv(src *environ) *environ {
 	return dst
 }
 
-func num(env *environ, tok token) int {
+func num(env *Environ, tok token) int {
 	switch tok.typ {
 	case tokNumber:
 		n, err := strconv.Atoi(string(tok.value))
@@ -52,7 +52,7 @@ func nilNode(n *Node) bool {
 }
 
 // (add 3 7) => 10
-func callUserFunc(env *environ, f *callable, expr *Node) *value {
+func callUserFunc(env *Environ, f *callable, expr *Node) *value {
 	newFrame := copyEnv(env)
 	param := f.params
 	arg := expr

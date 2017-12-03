@@ -7,7 +7,7 @@ type callable struct {
 	builtin bool
 
 	// pointer to a built-in func if it's a builtin
-	f func(env *environ, expr *Node) *value
+	f func(env *Environ, expr *Node) *value
 
 	// params and body of a user-defined func if it's no a builtin
 	params *Node
@@ -27,7 +27,7 @@ func init() {
 	funcTbl = append(funcTbl, &callable{name: "eq", f: eq, builtin: true})
 }
 
-func sum(env *environ, expr *Node) *value {
+func sum(env *Environ, expr *Node) *value {
 	lval := eval(env, expr)
 	if lval.typ != valNum {
 		fmt.Printf("Type error: unexpected type %s for +\n", lval.typ.String())
@@ -47,7 +47,7 @@ func sum(env *environ, expr *Node) *value {
 	}
 }
 
-func sub(env *environ, expr *Node) *value {
+func sub(env *Environ, expr *Node) *value {
 	lval := eval(env, expr)
 	if lval.typ != valNum {
 		fmt.Printf("Type error: unexpected type %s for -\n", lval.typ.String())
@@ -67,7 +67,7 @@ func sub(env *environ, expr *Node) *value {
 	}
 }
 
-func mul(env *environ, expr *Node) *value {
+func mul(env *Environ, expr *Node) *value {
 	acc := num(env, expr.L.Tok)
 	for !nilNode(expr.R) {
 		rval := eval(env, expr.R)
@@ -84,7 +84,7 @@ func mul(env *environ, expr *Node) *value {
 }
 
 // (exp base pow1 pow2 pow3) => base ^ (pow1 + pow2 + pow3)
-func exp(env *environ, expr *Node) *value {
+func exp(env *Environ, expr *Node) *value {
 	base := num(env, expr.L.Tok)
 	pow := 0
 	for !nilNode(expr.R) {
@@ -107,11 +107,11 @@ func exp(env *environ, expr *Node) *value {
 }
 
 // Eval evals.
-func Eval(env *environ, expr *Node) *value {
+func Eval(env *Environ, expr *Node) *value {
 	return eval(env, expr)
 }
 
-func eval(env *environ, expr *Node) *value {
+func eval(env *Environ, expr *Node) *value {
 	if expr == nil || expr.L == nil {
 		return &value{}
 	}
@@ -150,14 +150,14 @@ func eval(env *environ, expr *Node) *value {
 	case tokVoid:
 		return eval(env, expr.L)
 	default:
-		fmt.Printf("Unknown token type for %q\n", expr.L.Tok)
+		fmt.Printf("Unknown token type for %q\n", expr.L.Tok.String())
 	}
 	return &value{}
 }
 
 // (eq 3 3) => T
 // (eq 3 4) => NIL
-func eq(env *environ, expr *Node) *value {
+func eq(env *Environ, expr *Node) *value {
 	left := num(env, expr.L.Tok)
 	right := num(env, expr.R.L.Tok)
 	return &value{
@@ -170,7 +170,7 @@ func eq(env *environ, expr *Node) *value {
 //    ((eq x 1) 1)
 //    ((eq x 2) 1)
 //    (t (fib (- x 1))))
-func cond(env *environ, expr *Node) *value {
+func cond(env *Environ, expr *Node) *value {
 	for expr.L != nil && expr.R.R != nil {
 		conditional := eval(env, expr.L)
 		if conditional.typ != valBool {
@@ -186,7 +186,7 @@ func cond(env *environ, expr *Node) *value {
 }
 
 // (fn add (a b) (+ a b)) => ADD
-func defun(env *environ, expr *Node) *value {
+func defun(env *Environ, expr *Node) *value {
 	funcName := string(expr.L.Tok.value)
 	params := expr.R.L
 	body := expr.R.R.L
