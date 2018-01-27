@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Node defines a single node in the s-expression.
 type Node struct {
 	Tok  token
 	L, R *Node
@@ -93,10 +94,15 @@ func (p *Parser) Start() {
 
 // Parse parses source code into an expression tree.
 func (p *Parser) Parse() (node *Node, n int) {
-	p.tree = nil
-	p.done = false
+	p.Reset()
 	p.rparse()
 	return p.tree, p.tokzer.head
+}
+
+// Reset clears parser state.
+func (p *Parser) Reset() {
+	p.tree = nil
+	p.done = false
 }
 
 // ParseString is a convenience func that parses a string.
