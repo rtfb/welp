@@ -108,6 +108,9 @@ func exp(env *Environ, expr *Node) *value {
 
 // Eval evals.
 func Eval(env *Environ, expr *Node) *value {
+	if expr.Err != nil {
+		return newErrorValue(expr.Err)
+	}
 	return eval(env, expr)
 }
 

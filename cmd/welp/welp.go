@@ -17,11 +17,7 @@ func doFile(name string) error {
 	env := welp.NewEnv()
 	ch := welp.ParseStream(f)
 	for expr := range ch {
-		if expr.Err != nil {
-			fmt.Printf("Error: %v\n", expr.Err)
-		} else {
-			fmt.Println(welp.Eval(env, expr).String())
-		}
+		fmt.Println(welp.Eval(env, expr))
 	}
 	return nil
 }
@@ -64,11 +60,7 @@ func (r *repl) epl() {
 		return
 	}
 	r.rl.SetPrompt("welp> ")
-	if expr.Err != nil {
-		fmt.Printf("Error: %v\n", expr.Err)
-	} else {
-		fmt.Println(welp.Eval(r.env, expr).String())
-	}
+	fmt.Println(welp.Eval(r.env, expr))
 	r.p.Reset()
 }
 

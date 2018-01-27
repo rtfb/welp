@@ -1,6 +1,7 @@
 package welp
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -27,6 +28,7 @@ const (
 	valNum
 	valFunc
 	valBool
+	valError
 )
 
 type value struct {
@@ -34,6 +36,11 @@ type value struct {
 	numValue  int
 	boolValue bool
 	funcName  string
+	err       error
+}
+
+func newErrorValue(err error) *value {
+	return &value{typ: valError, err: err}
 }
 
 func (v *value) String() string {
@@ -47,6 +54,8 @@ func (v *value) String() string {
 			return "T"
 		}
 		return "NIL"
+	case valError:
+		return fmt.Sprintf("ERR: %v", v.err)
 	default:
 		return "<UNK>"
 	}
