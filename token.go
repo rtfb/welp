@@ -106,7 +106,7 @@ func (t *tokenizer) onNumber() {
 			t.r.UnreadByte()
 			break
 		}
-		err = buf.WriteByte(b)
+		buf.WriteByte(b)
 	}
 	t.tok <- token{typ: tokNumber, value: buf.Bytes(), pos: t.head, err: err}
 	t.head += buf.Len()
@@ -125,7 +125,7 @@ func (t *tokenizer) onChar() {
 			t.r.UnreadByte()
 			break
 		}
-		err = buf.WriteByte(b)
+		buf.WriteByte(b)
 	}
 	t.tok <- token{typ: tokIdentifier, value: buf.Bytes(), pos: t.head, err: err}
 	t.head += buf.Len()
@@ -158,7 +158,7 @@ func (t *tokenizer) onDoublequote() {
 			break
 		}
 		lastB = b
-		err = buf.WriteByte(b)
+		buf.WriteByte(b)
 	}
 	t.tok <- token{typ: tokString, value: buf.Bytes(), pos: t.head, err: err}
 	t.head += buf.Len()
