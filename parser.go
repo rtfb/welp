@@ -21,6 +21,15 @@ type Parser struct {
 	depth  int
 	done   bool
 	tokzer *tokenizer
+	debug  bool
+}
+
+// NewParser constructs a Parser.
+func NewParser(r io.Reader) *Parser {
+	return &Parser{
+		tokzer: newTokenizer(r),
+		debug:  false,
+	}
 }
 
 func (p *Parser) rparse() {
@@ -30,6 +39,9 @@ func (p *Parser) rparse() {
 	var tok token
 	for tok.typ != tokEOF {
 		tok = <-p.tokzer.tok
+		if p.debug {
+			fmt.Println(&tok)
+		}
 		if tok.err != nil && tok.typ != tokEOF {
 			panic(tok.err) // TODO: improve error handling
 		}
@@ -77,13 +89,6 @@ func (p *Parser) rparse() {
 		p.head.L = treeNode
 		p.head.R = &Node{}
 		p.head = p.head.R
-	}
-}
-
-// NewParser constructs a Parser.
-func NewParser(r io.Reader) *Parser {
-	return &Parser{
-		tokzer: newTokenizer(r),
 	}
 }
 
