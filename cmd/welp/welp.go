@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bufio"
-	"errors"
 	"fmt"
+	"io"
 	"os"
 
+	"github.com/chzyer/readline"
 	"github.com/rtfb/welp"
 )
 
@@ -16,14 +16,72 @@ func doFile(name string) error {
 	}
 	env := welp.NewEnv()
 	ch := welp.ParseStream(f)
-	for e := range ch {
-		if e.Err != nil {
-			println("Error: ", e.Err.Error())
+	for expr := range ch {
+		if expr.Err != nil {
+			fmt.Printf("Error: %v\n", expr.Err)
 		} else {
-			println(welp.Eval(env, e).String())
+			fmt.Println(welp.Eval(env, expr).String())
 		}
 	}
 	return nil
+}
+
+type repl struct {
+	rl     *readline.Instance
+	ch     chan *welp.Node
+	prompt string
+	env    *welp.Environ
+	r      *io.PipeReader
+	w      *io.PipeWriter
+	p      *welp.Parser
+}
+
+func newREPL() (*repl, error) {
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:                 "welp> ",
+		HistoryFile:            "/tmp/readline-multiline",
+		DisableAutoSaveHistory: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r, w := io.Pipe()
+	return &repl{
+		rl:     rl,
+		ch:     make(chan *welp.Node),
+		prompt: "welp> ",
+		env:    welp.NewEnv(),
+		r:      r,
+		w:      w,
+		p:      welp.NewParser(r),
+	}, nil
+}
+
+func (r *repl) epl() {
+	expr, _ := r.p.Parse()
+	if expr == nil {
+		r.rl.SetPrompt("> ")
+		return
+	}
+	r.rl.SetPrompt("welp> ")
+	if expr.Err != nil {
+		fmt.Printf("Error: %v\n", expr.Err)
+	} else {
+		fmt.Println(welp.Eval(r.env, expr).String())
+	}
+	r.p.Reset()
+}
+
+func (r *repl) Run() {
+	for {
+		line, err := r.rl.Readline()
+		if err != nil || line == "(q)" {
+			break
+		}
+		r.w.Write([]byte(line))
+		r.epl()
+	}
+	fmt.Println("Quitting")
 }
 
 func main() {
@@ -33,14 +91,13 @@ func main() {
 		}
 		return
 	}
-	fmt.Println("welp")
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Print("> ")
-	for scanner.Scan() {
-		fmt.Print("> ")
-		line := scanner.Text()
-		if line == "(q)" {
-			break
-		}
+	repl, err := newREPL()
+	if err != nil {
+		panic(err)
 	}
+	defer repl.rl.Close()
+	defer repl.r.Close()
+	defer repl.w.Close()
+	repl.p.Start()
+	repl.Run()
 }
