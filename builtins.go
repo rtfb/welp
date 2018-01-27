@@ -141,7 +141,7 @@ func eval(env *Environ, expr *Node) *value {
 		if v, ok := env.vars[identName]; ok {
 			return v
 		}
-		fmt.Printf("No such symbol %q\n", expr.L.Tok)
+		fmt.Printf("No such symbol %q\n", expr.L.Tok.String())
 	case tokNumber:
 		return &value{
 			typ:      valNum,

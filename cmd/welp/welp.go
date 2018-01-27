@@ -16,12 +16,9 @@ func doFile(name string) error {
 	}
 	env := welp.NewEnv()
 	ch := welp.ParseStream(f)
-	if ch == nil {
-		return errors.New("ch is nil")
-	}
 	for e := range ch {
 		if e.Err != nil {
-			println("Error: ", e.Err)
+			println("Error: ", e.Err.Error())
 		} else {
 			println(welp.Eval(env, e).String())
 		}
