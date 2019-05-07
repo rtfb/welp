@@ -113,6 +113,7 @@ func (p *Parser) Reset() {
 // ParseString is a convenience func that parses a string.
 func ParseString(input string) *Node {
 	p := NewParser(strings.NewReader(input))
+	p.Start()
 	n, _ := p.Parse()
 	return n
 }

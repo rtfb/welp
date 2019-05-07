@@ -1,6 +1,7 @@
 package welp
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ func TestTokenizer2(t *testing.T) {
 		{"(+ 123 321)", []string{"(", "+", "123", "321", ")"}},
 	}
 	for _, test := range tests {
-		tokzer := newTokenizer([]byte(test.input))
+		tokzer := newTokenizer(strings.NewReader(test.input))
 		go tokzer.onStart()
 		i := 0
 		for {
