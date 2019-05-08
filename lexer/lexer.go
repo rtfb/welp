@@ -152,22 +152,45 @@ func (t *Tokenizer) onCloseParen() {
 
 func (t *Tokenizer) onDoublequote() {
 	var buf bytes.Buffer
-	var b, lastB byte
+	var b byte
 	var err error
+	foundClosingDoublequote := false
+loop:
 	for {
 		b, err = t.r.ReadByte()
 		if err != nil {
 			break
 		}
-		if b == '"' {
-			if lastB == '\\' {
-				continue
+		if b == '\\' {
+			var bAfter byte
+			bAfter, err = t.r.ReadByte()
+			if err != nil {
+				break
 			}
-			t.r.UnreadByte()
+			switch bAfter {
+			case '"':
+				buf.WriteByte(bAfter)
+				continue
+			case '\\':
+				buf.WriteByte(bAfter)
+				continue
+			case 'n':
+				buf.WriteByte('\n')
+				continue
+			default:
+				t.r.UnreadByte()
+				err = fmt.Errorf("unrecognized escape sequence: \\%c", bAfter)
+				break loop
+			}
+		}
+		if b == '"' {
+			foundClosingDoublequote = true
 			break
 		}
-		lastB = b
 		buf.WriteByte(b)
+	}
+	if (err == nil || err == io.EOF) && !foundClosingDoublequote {
+		err = fmt.Errorf("unclosed string")
 	}
 	t.Tok <- Token{Typ: TokString, Value: buf.Bytes(), Pos: t.Head, Err: err}
 	t.Head += buf.Len()
