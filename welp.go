@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/rtfb/welp/lexer"
 )
 
 type Environ struct {
@@ -25,16 +27,16 @@ func copyEnv(src *Environ) *Environ {
 	return dst
 }
 
-func num(env *Environ, tok token) int {
-	switch tok.typ {
-	case tokNumber:
-		n, err := strconv.Atoi(string(tok.value))
+func num(env *Environ, tok lexer.Token) int {
+	switch tok.Typ {
+	case lexer.TokNumber:
+		n, err := strconv.Atoi(string(tok.Value))
 		if err != nil {
 			panic(err)
 		}
 		return n
-	case tokIdentifier:
-		val := env.vars[string(tok.value)]
+	case lexer.TokIdentifier:
+		val := env.vars[string(tok.Value)]
 		if val.typ != valNum {
 			fmt.Printf("wrong type %s, expected %s", val.typ, valNum)
 			return -1
@@ -48,7 +50,7 @@ func num(env *Environ, tok token) int {
 
 // TODO fix parser to produce an actual nil instead of this node
 func nilNode(n *Node) bool {
-	return n.Tok.typ == tokVoid && n.L == nil && n.R == nil
+	return n.Tok.Typ == lexer.TokVoid && n.L == nil && n.R == nil
 }
 
 // (add 3 7) => 10
@@ -62,7 +64,7 @@ func callUserFunc(env *Environ, f *callable, expr *Node) *value {
 		if nval.typ != valNum {
 			fmt.Printf("Type error: unexpected type %s for %s\n", nval.typ.String(), f.name)
 		}
-		newFrame.vars[string(param.L.Tok.value)] = &value{
+		newFrame.vars[string(param.L.Tok.Value)] = &value{
 			typ:      valNum,
 			numValue: nval.numValue,
 		}
@@ -77,7 +79,7 @@ var indent int
 func dump(expr *Node) {
 	indent += 4
 	prefix := strings.Repeat(" ", indent)
-	if expr.Tok.typ == tokVoid {
+	if expr.Tok.Typ == lexer.TokVoid {
 		fmt.Printf("%s-\n", prefix)
 	} else {
 		fmt.Printf("%stok: %s\n", prefix, expr.Tok.String())

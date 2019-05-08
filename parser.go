@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/rtfb/welp/lexer"
 )
 
 // Node defines a single node in the s-expression.
 type Node struct {
-	Tok  token
+	Tok  lexer.Token
 	L, R *Node
 	Err  error
 }
@@ -20,14 +22,14 @@ type Parser struct {
 	head   *Node
 	depth  int
 	done   bool
-	tokzer *tokenizer
+	tokzer *lexer.Tokenizer
 	debug  bool
 }
 
 // NewParser constructs a Parser.
 func NewParser(r io.Reader) *Parser {
 	return &Parser{
-		tokzer: newTokenizer(r),
+		tokzer: lexer.NewTokenizer(r),
 		debug:  false,
 	}
 }
@@ -36,18 +38,18 @@ func (p *Parser) rparse() {
 	if p.done {
 		return
 	}
-	var tok token
-	for tok.typ != tokEOF {
-		tok = <-p.tokzer.tok
+	var tok lexer.Token
+	for tok.Typ != lexer.TokEOF {
+		tok = <-p.tokzer.Tok
 		if p.debug {
 			fmt.Println(&tok)
 		}
-		if tok.err != nil && tok.typ != tokEOF {
-			panic(tok.err) // TODO: improve error handling
+		if tok.Err != nil && tok.Typ != lexer.TokEOF {
+			panic(tok.Err) // TODO: improve error handling
 		}
 		var treeNode *Node
-		switch tok.typ {
-		case tokOpenParen:
+		switch tok.Typ {
+		case lexer.TokOpenParen:
 			p.depth++
 			var branchPoint *Node
 			if p.tree == nil {
@@ -67,17 +69,17 @@ func (p *Parser) rparse() {
 				p.head = branchPoint.R
 			}
 			continue
-		case tokCloseParen:
+		case lexer.TokCloseParen:
 			p.depth--
 			if p.depth == 0 {
 				p.done = true
 			}
 			return
-		case tokIdentifier, tokNumber:
+		case lexer.TokIdentifier, lexer.TokNumber:
 			treeNode = &Node{
 				Tok: tok,
 			}
-		case tokEOF:
+		case lexer.TokEOF:
 			p.done = true
 			return
 		default:
@@ -94,14 +96,14 @@ func (p *Parser) rparse() {
 
 // Start starts the concurrent part of the parser.
 func (p *Parser) Start() {
-	go p.tokzer.onStart()
+	go p.tokzer.OnStart()
 }
 
 // Parse parses source code into an expression tree.
 func (p *Parser) Parse() (node *Node, n int) {
 	p.Reset()
 	p.rparse()
-	return p.tree, p.tokzer.head
+	return p.tree, p.tokzer.Head
 }
 
 // Reset clears parser state.

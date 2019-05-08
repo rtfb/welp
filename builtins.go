@@ -1,6 +1,10 @@
 package welp
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/rtfb/welp/lexer"
+)
 
 type callable struct {
 	name    string
@@ -118,9 +122,9 @@ func eval(env *Environ, expr *Node) *value {
 	if expr == nil || expr.L == nil {
 		return &value{}
 	}
-	switch expr.L.Tok.typ {
-	case tokIdentifier:
-		identName := string(expr.L.Tok.value)
+	switch expr.L.Tok.Typ {
+	case lexer.TokIdentifier:
+		identName := string(expr.L.Tok.Value)
 		if identName == "t" {
 			return &value{
 				typ:       valBool,
@@ -145,12 +149,12 @@ func eval(env *Environ, expr *Node) *value {
 			return v
 		}
 		fmt.Printf("No such symbol %q\n", expr.L.Tok.String())
-	case tokNumber:
+	case lexer.TokNumber:
 		return &value{
 			typ:      valNum,
 			numValue: num(env, expr.L.Tok),
 		}
-	case tokVoid:
+	case lexer.TokVoid:
 		return eval(env, expr.L)
 	default:
 		fmt.Printf("Unknown token type for %q\n", expr.L.Tok.String())
@@ -190,7 +194,7 @@ func cond(env *Environ, expr *Node) *value {
 
 // (fn add (a b) (+ a b)) => ADD
 func defun(env *Environ, expr *Node) *value {
-	funcName := string(expr.L.Tok.value)
+	funcName := string(expr.L.Tok.Value)
 	params := expr.R.L
 	body := expr.R.R.L
 	funcTbl = append(funcTbl, &callable{

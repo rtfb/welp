@@ -1,4 +1,4 @@
-package welp
+package lexer
 
 import (
 	"strings"
@@ -20,15 +20,15 @@ func TestTokenizer2(t *testing.T) {
 		{"(+ 123 321)", []string{"(", "+", "123", "321", ")"}},
 	}
 	for _, test := range tests {
-		tokzer := newTokenizer(strings.NewReader(test.input))
-		go tokzer.onStart()
+		tokzer := NewTokenizer(strings.NewReader(test.input))
+		go tokzer.OnStart()
 		i := 0
 		for {
-			tok := <-tokzer.tok
-			if tok.typ == tokEOF {
+			tok := <-tokzer.Tok
+			if tok.Typ == TokEOF {
 				break
 			}
-			assert.Equal(t, test.expected[i], string(tok.value))
+			assert.Equal(t, test.expected[i], string(tok.Value))
 			i++
 		}
 	}

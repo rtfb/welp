@@ -1,5 +1,5 @@
 
-ALL_SRC = cmd/welp/welp.go *.go
+ALL_SRC = cmd/welp/welp.go lexer/*.go *.go
 
 all: welp test
 
@@ -10,12 +10,12 @@ welp: $(ALL_SRC)
 	go build ./cmd/welp/welp.go
 
 test:
-	go test *.go
+	go test ./...
 
 ctest:
-	go test -cover *.go
+	go test -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out
 
 wtest:
-	go test -cover *.go
+	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
