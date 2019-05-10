@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rtfb/welp/lexer"
+	"github.com/rtfb/welp/parser"
 )
 
 type callable struct {
@@ -11,11 +12,11 @@ type callable struct {
 	builtin bool
 
 	// pointer to a built-in func if it's a builtin
-	f func(env *Environ, expr *Node) *value
+	f func(env *Environ, expr *parser.Node) *value
 
 	// params and body of a user-defined func if it's no a builtin
-	params *Node
-	body   *Node
+	params *parser.Node
+	body   *parser.Node
 }
 
 var funcTbl []*callable
@@ -31,7 +32,7 @@ func init() {
 	funcTbl = append(funcTbl, &callable{name: "eq", f: eq, builtin: true})
 }
 
-func sum(env *Environ, expr *Node) *value {
+func sum(env *Environ, expr *parser.Node) *value {
 	lval := eval(env, expr)
 	if lval.typ != valNum {
 		fmt.Printf("Type error: unexpected type %s for +\n", lval.typ.String())
@@ -51,7 +52,7 @@ func sum(env *Environ, expr *Node) *value {
 	}
 }
 
-func sub(env *Environ, expr *Node) *value {
+func sub(env *Environ, expr *parser.Node) *value {
 	lval := eval(env, expr)
 	if lval.typ != valNum {
 		fmt.Printf("Type error: unexpected type %s for -\n", lval.typ.String())
@@ -71,7 +72,7 @@ func sub(env *Environ, expr *Node) *value {
 	}
 }
 
-func mul(env *Environ, expr *Node) *value {
+func mul(env *Environ, expr *parser.Node) *value {
 	acc := num(env, expr.L.Tok)
 	for !nilNode(expr.R) {
 		rval := eval(env, expr.R)
@@ -88,7 +89,7 @@ func mul(env *Environ, expr *Node) *value {
 }
 
 // (exp base pow1 pow2 pow3) => base ^ (pow1 + pow2 + pow3)
-func exp(env *Environ, expr *Node) *value {
+func exp(env *Environ, expr *parser.Node) *value {
 	base := num(env, expr.L.Tok)
 	pow := 0
 	for !nilNode(expr.R) {
@@ -111,14 +112,14 @@ func exp(env *Environ, expr *Node) *value {
 }
 
 // Eval evals.
-func Eval(env *Environ, expr *Node) *value {
+func Eval(env *Environ, expr *parser.Node) *value {
 	if expr.Err != nil {
 		return newErrorValue(expr.Err)
 	}
 	return eval(env, expr)
 }
 
-func eval(env *Environ, expr *Node) *value {
+func eval(env *Environ, expr *parser.Node) *value {
 	if expr == nil || expr.L == nil {
 		return &value{}
 	}
@@ -164,7 +165,7 @@ func eval(env *Environ, expr *Node) *value {
 
 // (eq 3 3) => T
 // (eq 3 4) => NIL
-func eq(env *Environ, expr *Node) *value {
+func eq(env *Environ, expr *parser.Node) *value {
 	left := num(env, expr.L.Tok)
 	right := num(env, expr.R.L.Tok)
 	return &value{
@@ -177,7 +178,7 @@ func eq(env *Environ, expr *Node) *value {
 //    ((eq x 1) 1)
 //    ((eq x 2) 1)
 //    (t (fib (- x 1))))
-func cond(env *Environ, expr *Node) *value {
+func cond(env *Environ, expr *parser.Node) *value {
 	for expr.L != nil && expr.R.R != nil {
 		conditional := eval(env, expr.L)
 		if conditional.typ != valBool {
@@ -193,7 +194,7 @@ func cond(env *Environ, expr *Node) *value {
 }
 
 // (fn add (a b) (+ a b)) => ADD
-func defun(env *Environ, expr *Node) *value {
+func defun(env *Environ, expr *parser.Node) *value {
 	funcName := string(expr.L.Tok.Value)
 	params := expr.R.L
 	body := expr.R.R.L

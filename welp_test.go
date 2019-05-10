@@ -3,6 +3,7 @@ package welp
 import (
 	"testing"
 
+	"github.com/rtfb/welp/parser"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +22,7 @@ func TestEval(t *testing.T) {
 	}
 	for _, test := range tests {
 		env := NewEnv()
-		got := eval(env, ParseString(test.input))
+		got := eval(env, parser.ParseString(test.input))
 		if got.numValue != test.expected {
 			assert.Equal(t, got, test.expected, "eval(%q)", test.input)
 		}

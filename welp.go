@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rtfb/welp/lexer"
+	"github.com/rtfb/welp/parser"
 )
 
 type Environ struct {
@@ -49,12 +50,12 @@ func num(env *Environ, tok lexer.Token) int {
 }
 
 // TODO fix parser to produce an actual nil instead of this node
-func nilNode(n *Node) bool {
+func nilNode(n *parser.Node) bool {
 	return n.Tok.Typ == lexer.TokVoid && n.L == nil && n.R == nil
 }
 
 // (add 3 7) => 10
-func callUserFunc(env *Environ, f *callable, expr *Node) *value {
+func callUserFunc(env *Environ, f *callable, expr *parser.Node) *value {
 	newFrame := copyEnv(env)
 	param := f.params
 	arg := expr
@@ -76,7 +77,7 @@ func callUserFunc(env *Environ, f *callable, expr *Node) *value {
 
 var indent int
 
-func dump(expr *Node) {
+func dump(expr *parser.Node) {
 	indent += 4
 	prefix := strings.Repeat(" ", indent)
 	if expr.Tok.Typ == lexer.TokVoid {
@@ -93,15 +94,17 @@ func dump(expr *Node) {
 	indent -= 4
 }
 
+/*
 func main() {
 	env := NewEnv()
-	expr := ParseString(`
+	expr := parser.ParseString(`
 (fn fib (n)
   (cond
     ((eq n 1) 1)
     ((eq n 2) 1)
     (t (+ (fib (- n 1)) (fib (- n 2))))))`)
 	println(eval(env, expr).String())
-	expr = ParseString("(fib 7)") // => 13
+	expr = parser.ParseString("(fib 7)") // => 13
 	println(eval(env, expr).String())
 }
+*/

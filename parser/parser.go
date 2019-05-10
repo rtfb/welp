@@ -1,4 +1,4 @@
-package welp
+package parser
 
 import (
 	"errors"
@@ -26,8 +26,8 @@ type Parser struct {
 	debug  bool
 }
 
-// NewParser constructs a Parser.
-func NewParser(r io.Reader) *Parser {
+// New constructs a Parser.
+func New(r io.Reader) *Parser {
 	return &Parser{
 		tokzer: lexer.NewTokenizer(r),
 		debug:  false,
@@ -114,7 +114,7 @@ func (p *Parser) Reset() {
 
 // ParseString is a convenience func that parses a string.
 func ParseString(input string) *Node {
-	p := NewParser(strings.NewReader(input))
+	p := New(strings.NewReader(input))
 	p.Start()
 	n, _ := p.Parse()
 	return n
@@ -123,7 +123,7 @@ func ParseString(input string) *Node {
 // ParseStream reads and parses all expressions from a given stream and sends
 // them down the channel.
 func ParseStream(r io.Reader) <-chan *Node {
-	p := NewParser(r)
+	p := New(r)
 	p.Start()
 	n := 0
 	ch := make(chan *Node)
