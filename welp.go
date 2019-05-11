@@ -6,17 +6,19 @@ import (
 	"strings"
 
 	"github.com/rtfb/welp/lexer"
+	"github.com/rtfb/welp/object"
 	"github.com/rtfb/welp/parser"
 )
 
+// Environ represents the execution environment.
 type Environ struct {
-	vars map[string]*value
+	vars map[string]object.Object
 }
 
 // NewEnv creates an environment.
 func NewEnv() *Environ {
 	return &Environ{
-		vars: make(map[string]*value),
+		vars: make(map[string]object.Object),
 	}
 }
 
@@ -28,21 +30,22 @@ func copyEnv(src *Environ) *Environ {
 	return dst
 }
 
-func num(env *Environ, tok lexer.Token) int {
+func num(env *Environ, tok lexer.Token) int64 {
 	switch tok.Typ {
 	case lexer.TokNumber:
 		n, err := strconv.Atoi(string(tok.Value))
 		if err != nil {
 			panic(err)
 		}
-		return n
+		return int64(n)
 	case lexer.TokIdentifier:
 		val := env.vars[string(tok.Value)]
-		if val.typ != valNum {
-			fmt.Printf("wrong type %s, expected %s", val.typ, valNum)
+		intVal, ok := val.(*object.Integer)
+		if !ok {
+			fmt.Printf("wrong type %T, expected %s", val, object.IntegerType)
 			return -1
 		}
-		return val.numValue
+		return intVal.Value
 	default:
 		fmt.Printf("error looking up num for %s\n", tok.String())
 		panic("err")
@@ -55,19 +58,19 @@ func nilNode(n *parser.Node) bool {
 }
 
 // (add 3 7) => 10
-func callUserFunc(env *Environ, f *callable, expr *parser.Node) *value {
+func callUserFunc(env *Environ, f *callable, expr *parser.Node) object.Object {
 	newFrame := copyEnv(env)
 	param := f.params
 	arg := expr
 	// TODO: add checking. At least check if number of args is correct
 	for param.R != nil && arg.R != nil {
-		nval := eval(env, arg)
-		if nval.typ != valNum {
-			fmt.Printf("Type error: unexpected type %s for %s\n", nval.typ.String(), f.name)
+		val := eval(env, arg)
+		nval, ok := val.(*object.Integer)
+		if !ok {
+			fmt.Printf("Type error: unexpected type %T for %s\n", val, f.name)
 		}
-		newFrame.vars[string(param.L.Tok.Value)] = &value{
-			typ:      valNum,
-			numValue: nval.numValue,
+		newFrame.vars[string(param.L.Tok.Value)] = &object.Integer{
+			Value: nval.Value,
 		}
 		param = param.R
 		arg = arg.R
@@ -93,18 +96,3 @@ func dump(expr *parser.Node) {
 	}
 	indent -= 4
 }
-
-/*
-func main() {
-	env := NewEnv()
-	expr := parser.ParseString(`
-(fn fib (n)
-  (cond
-    ((eq n 1) 1)
-    ((eq n 2) 1)
-    (t (+ (fib (- n 1)) (fib (- n 2))))))`)
-	println(eval(env, expr).String())
-	expr = parser.ParseString("(fib 7)") // => 13
-	println(eval(env, expr).String())
-}
-*/

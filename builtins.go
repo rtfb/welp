@@ -1,9 +1,11 @@
 package welp
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/rtfb/welp/lexer"
+	"github.com/rtfb/welp/object"
 	"github.com/rtfb/welp/parser"
 )
 
@@ -12,7 +14,7 @@ type callable struct {
 	builtin bool
 
 	// pointer to a built-in func if it's a builtin
-	f func(env *Environ, expr *parser.Node) *value
+	f func(env *Environ, expr *parser.Node) object.Object
 
 	// params and body of a user-defined func if it's no a builtin
 	params *parser.Node
@@ -32,72 +34,69 @@ func init() {
 	funcTbl = append(funcTbl, &callable{name: "eq", f: eq, builtin: true})
 }
 
-func sum(env *Environ, expr *parser.Node) *value {
+func sum(env *Environ, expr *parser.Node) object.Object {
 	lval := eval(env, expr)
-	if lval.typ != valNum {
-		fmt.Printf("Type error: unexpected type %s for +\n", lval.typ.String())
+	intLval, ok := lval.(*object.Integer)
+	if !ok {
+		fmt.Printf("Type error: unexpected type %T for +\n", lval)
 	}
-	acc := lval.numValue
+	acc := intLval.Value
 	for !nilNode(expr.R) {
 		rval := eval(env, expr.R)
-		if rval.typ != valNum {
-			fmt.Printf("Type error: unexpected type %s for +\n", rval.typ.String())
+		intRval, ok := rval.(*object.Integer)
+		if !ok {
+			fmt.Printf("Type error: unexpected type %T for +\n", rval)
 		}
-		acc += rval.numValue
+		acc += intRval.Value
 		expr = expr.R
 	}
-	return &value{
-		typ:      valNum,
-		numValue: acc,
-	}
+	return &object.Integer{Value: acc}
 }
 
-func sub(env *Environ, expr *parser.Node) *value {
+func sub(env *Environ, expr *parser.Node) object.Object {
 	lval := eval(env, expr)
-	if lval.typ != valNum {
-		fmt.Printf("Type error: unexpected type %s for -\n", lval.typ.String())
+	intLval, ok := lval.(*object.Integer)
+	if !ok {
+		fmt.Printf("Type error: unexpected type %T for -\n", lval)
 	}
-	acc := lval.numValue
+	acc := intLval.Value
 	for !nilNode(expr.R) {
 		rval := eval(env, expr.R)
-		if rval.typ != valNum {
-			fmt.Printf("Type error: unexpected type %s for -\n", rval.typ.String())
+		intRval, ok := rval.(*object.Integer)
+		if !ok {
+			fmt.Printf("Type error: unexpected type %T for -\n", rval)
 		}
-		acc -= rval.numValue
+		acc -= intRval.Value
 		expr = expr.R
 	}
-	return &value{
-		typ:      valNum,
-		numValue: acc,
-	}
+	return &object.Integer{Value: acc}
 }
 
-func mul(env *Environ, expr *parser.Node) *value {
+func mul(env *Environ, expr *parser.Node) object.Object {
 	acc := num(env, expr.L.Tok)
 	for !nilNode(expr.R) {
 		rval := eval(env, expr.R)
-		if rval.typ != valNum {
-			fmt.Printf("Type error: unexpected type %s for *\n", rval.typ.String())
+		intRval, ok := rval.(*object.Integer)
+		if !ok {
+			fmt.Printf("Type error: unexpected type %T for *\n", rval)
 		}
-		acc *= rval.numValue
+		acc *= intRval.Value
 		expr = expr.R
 	}
-	return &value{
-		typ:      valNum,
-		numValue: acc,
-	}
+	return &object.Integer{Value: acc}
 }
 
 // (exp base pow1 pow2 pow3) => base ^ (pow1 + pow2 + pow3)
-func exp(env *Environ, expr *parser.Node) *value {
+func exp(env *Environ, expr *parser.Node) object.Object {
 	base := num(env, expr.L.Tok)
-	pow := 0
+	pow := int64(0)
 	for !nilNode(expr.R) {
 		rval := eval(env, expr.R)
-		if rval.typ != valNum {
-			fmt.Printf("Type error: unexpected type %s for exp\n", rval.typ.String())
+		intRval, ok := rval.(*object.Integer)
+		if !ok {
+			fmt.Printf("Type error: unexpected type %T for exp\n", rval)
 		}
-		pow += rval.numValue
+		pow += intRval.Value
 		expr = expr.R
 	}
 	result := base
@@ -105,38 +104,29 @@ func exp(env *Environ, expr *parser.Node) *value {
 		result *= base
 		pow--
 	}
-	return &value{
-		typ:      valNum,
-		numValue: result,
-	}
+	return &object.Integer{Value: result}
 }
 
 // Eval evals.
-func Eval(env *Environ, expr *parser.Node) *value {
+func Eval(env *Environ, expr *parser.Node) object.Object {
 	if expr.Err != nil {
-		return newErrorValue(expr.Err)
+		return &object.Error{Err: expr.Err}
 	}
 	return eval(env, expr)
 }
 
-func eval(env *Environ, expr *parser.Node) *value {
+func eval(env *Environ, expr *parser.Node) object.Object {
 	if expr == nil || expr.L == nil {
-		return &value{}
+		return &object.Null{}
 	}
 	switch expr.L.Tok.Typ {
 	case lexer.TokIdentifier:
 		identName := string(expr.L.Tok.Value)
 		if identName == "t" {
-			return &value{
-				typ:       valBool,
-				boolValue: true,
-			}
+			return &object.Boolean{Value: true}
 		}
 		if identName == "nil" {
-			return &value{
-				typ:       valBool,
-				boolValue: false,
-			}
+			return &object.Boolean{Value: true}
 		}
 		for _, f := range funcTbl {
 			if identName == f.name {
@@ -151,41 +141,36 @@ func eval(env *Environ, expr *parser.Node) *value {
 		}
 		fmt.Printf("No such symbol %q\n", expr.L.Tok.String())
 	case lexer.TokNumber:
-		return &value{
-			typ:      valNum,
-			numValue: num(env, expr.L.Tok),
-		}
+		return &object.Integer{Value: num(env, expr.L.Tok)}
 	case lexer.TokVoid:
 		return eval(env, expr.L)
 	default:
 		fmt.Printf("Unknown token type for %q\n", expr.L.Tok.String())
 	}
-	return &value{}
+	return &object.Error{Err: errors.New("huh?")}
 }
 
 // (eq 3 3) => T
 // (eq 3 4) => NIL
-func eq(env *Environ, expr *parser.Node) *value {
+func eq(env *Environ, expr *parser.Node) object.Object {
 	left := num(env, expr.L.Tok)
 	right := num(env, expr.R.L.Tok)
-	return &value{
-		typ:       valBool,
-		boolValue: left == right,
-	}
+	return &object.Boolean{Value: left == right}
 }
 
 // (cond
 //    ((eq x 1) 1)
 //    ((eq x 2) 1)
 //    (t (fib (- x 1))))
-func cond(env *Environ, expr *parser.Node) *value {
+func cond(env *Environ, expr *parser.Node) object.Object {
 	for expr.L != nil && expr.R.R != nil {
 		conditional := eval(env, expr.L)
-		if conditional.typ != valBool {
-			fmt.Printf("Type error: cond clause evaluates to %s, not bool\n",
-				conditional.typ.String())
+		boolCond, ok := conditional.(*object.Boolean)
+		if !ok {
+			fmt.Printf("Type error: cond clause evaluates to %T, not bool\n",
+				conditional)
 		}
-		if conditional.boolValue {
+		if boolCond.Value {
 			return eval(env, expr.L.R)
 		}
 		expr = expr.R
@@ -194,7 +179,7 @@ func cond(env *Environ, expr *parser.Node) *value {
 }
 
 // (fn add (a b) (+ a b)) => ADD
-func defun(env *Environ, expr *parser.Node) *value {
+func defun(env *Environ, expr *parser.Node) object.Object {
 	funcName := string(expr.L.Tok.Value)
 	params := expr.R.L
 	body := expr.R.R.L
@@ -204,8 +189,5 @@ func defun(env *Environ, expr *parser.Node) *value {
 		params:  params,
 		body:    body,
 	})
-	return &value{
-		typ:      valFunc,
-		funcName: funcName,
-	}
+	return &object.Func{Name: funcName}
 }
