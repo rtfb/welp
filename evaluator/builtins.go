@@ -1,4 +1,4 @@
-package welp
+package evaluator
 
 import (
 	"errors"

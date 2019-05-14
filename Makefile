@@ -1,5 +1,5 @@
 
-ALL_SRC = cmd/welp/welp.go lexer/*.go object/*.go parser/*.go *.go
+ALL_SRC = cmd/welp/welp.go evaluator/*.go lexer/*.go object/*.go parser/*.go
 
 all: welp test
 

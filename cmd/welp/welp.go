@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/chzyer/readline"
-	"github.com/rtfb/welp"
+	"github.com/rtfb/welp/evaluator"
 	"github.com/rtfb/welp/parser"
 )
 
@@ -15,10 +15,10 @@ func doFile(name string) error {
 	if err != nil {
 		return err
 	}
-	env := welp.NewEnv()
+	env := evaluator.NewEnv()
 	ch := parser.ParseStream(f)
 	for expr := range ch {
-		fmt.Println(welp.Eval(env, expr))
+		fmt.Println(evaluator.Eval(env, expr))
 	}
 	return nil
 }
@@ -27,7 +27,7 @@ type repl struct {
 	rl     *readline.Instance
 	ch     chan *parser.Node
 	prompt string
-	env    *welp.Environ
+	env    *evaluator.Environ
 	r      *io.PipeReader
 	w      *io.PipeWriter
 	p      *parser.Parser
@@ -47,7 +47,7 @@ func newREPL() (*repl, error) {
 		rl:     rl,
 		ch:     make(chan *parser.Node),
 		prompt: "welp> ",
-		env:    welp.NewEnv(),
+		env:    evaluator.NewEnv(),
 		r:      r,
 		w:      w,
 		p:      parser.New(r),
@@ -61,7 +61,7 @@ func (r *repl) epl() {
 		return
 	}
 	r.rl.SetPrompt("welp> ")
-	fmt.Println(welp.Eval(r.env, expr))
+	fmt.Println(evaluator.Eval(r.env, expr))
 	r.p.Reset()
 }
 
