@@ -12,13 +12,15 @@ import (
 
 // Environ represents the execution environment.
 type Environ struct {
-	vars map[string]object.Object
+	vars  map[string]object.Object
+	funcs map[string]*callable
 }
 
 // NewEnv creates an environment.
 func NewEnv() *Environ {
 	return &Environ{
-		vars: make(map[string]object.Object),
+		vars:  make(map[string]object.Object),
+		funcs: makeBuildins(),
 	}
 }
 

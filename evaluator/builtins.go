@@ -21,17 +21,17 @@ type callable struct {
 	body   *parser.Node
 }
 
-var funcTbl []*callable
-
-func init() {
-	funcTbl = append(funcTbl, &callable{name: "+", f: sum, builtin: true})
-	funcTbl = append(funcTbl, &callable{name: "-", f: sub, builtin: true})
-	funcTbl = append(funcTbl, &callable{name: "*", f: mul, builtin: true})
-	funcTbl = append(funcTbl, &callable{name: "exp", f: exp, builtin: true})
-	funcTbl = append(funcTbl, &callable{name: "eval", f: eval, builtin: true})
-	funcTbl = append(funcTbl, &callable{name: "fn", f: defun, builtin: true})
-	funcTbl = append(funcTbl, &callable{name: "cond", f: cond, builtin: true})
-	funcTbl = append(funcTbl, &callable{name: "eq", f: eq, builtin: true})
+func makeBuildins() map[string]*callable {
+	return map[string]*callable{
+		"+":    &callable{name: "+", f: sum, builtin: true},
+		"-":    &callable{name: "-", f: sub, builtin: true},
+		"*":    &callable{name: "*", f: mul, builtin: true},
+		"exp":  &callable{name: "exp", f: exp, builtin: true},
+		"eval": &callable{name: "eval", f: eval, builtin: true},
+		"fn":   &callable{name: "fn", f: defun, builtin: true},
+		"cond": &callable{name: "cond", f: cond, builtin: true},
+		"eq":   &callable{name: "eq", f: eq, builtin: true},
+	}
 }
 
 func sum(env *Environ, expr *parser.Node) object.Object {
@@ -128,13 +128,12 @@ func eval(env *Environ, expr *parser.Node) object.Object {
 		if identName == "nil" {
 			return &object.Boolean{Value: true}
 		}
-		for _, f := range funcTbl {
-			if identName == f.name {
-				if f.builtin {
-					return f.f(env, expr.R)
-				}
-				return callUserFunc(env, f, expr.R)
+		function, ok := env.funcs[identName]
+		if ok {
+			if function.builtin {
+				return function.f(env, expr.R)
 			}
+			return callUserFunc(env, function, expr.R)
 		}
 		if v, ok := env.vars[identName]; ok {
 			return v
@@ -183,11 +182,11 @@ func defun(env *Environ, expr *parser.Node) object.Object {
 	funcName := string(expr.L.Tok.Value)
 	params := expr.R.L
 	body := expr.R.R.L
-	funcTbl = append(funcTbl, &callable{
+	env.funcs[funcName] = &callable{
 		name:    funcName,
 		builtin: false,
 		params:  params,
 		body:    body,
-	})
+	}
 	return &object.Func{Name: funcName}
 }
