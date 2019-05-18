@@ -36,6 +36,7 @@ func makeBuiltins() map[string]*callable {
 		"append":   &callable{name: "append", f: arrAppend, builtin: true},
 		"nth":      &callable{name: "nth", f: nth, builtin: true},
 		"len":      &callable{name: "len", f: arrLen, builtin: true},
+		"print":    &callable{name: "print", f: print, builtin: true},
 	}
 }
 
@@ -267,4 +268,9 @@ func arrLen(env *Environ, expr *parser.Node) object.Object {
 	}
 	arr := arrObj.(*object.Array)
 	return &object.Integer{Value: int64(len(arr.Value))}
+}
+
+func print(env *Environ, expr *parser.Node) object.Object {
+	fmt.Println(eval(env, expr).Inspect())
+	return &object.Null{}
 }
