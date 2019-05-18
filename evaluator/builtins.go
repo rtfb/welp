@@ -125,7 +125,7 @@ func eval(env *Environ, expr *parser.Node) object.Object {
 	}
 	switch expr.L.Tok.Typ {
 	case lexer.TokIdentifier:
-		identName := string(expr.L.Tok.Value)
+		identName := ident(expr)
 		if identName == "t" {
 			return &object.Boolean{Value: true}
 		}
@@ -183,7 +183,7 @@ func cond(env *Environ, expr *parser.Node) object.Object {
 
 // (fn add (a b) (+ a b)) => ADD
 func defun(env *Environ, expr *parser.Node) object.Object {
-	funcName := string(expr.L.Tok.Value)
+	funcName := ident(expr)
 	params := expr.R.L
 	body := expr.R.R.L
 	env.funcs[funcName] = &callable{
@@ -199,7 +199,7 @@ func defun(env *Environ, expr *parser.Node) object.Object {
 // identifier => 5
 func let(env *Environ, expr *parser.Node) object.Object {
 	value := eval(env, expr.R)
-	env.vars[string(expr.L.Tok.Value)] = value
+	env.vars[ident(expr)] = value
 	return value
 }
 

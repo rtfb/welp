@@ -70,11 +70,15 @@ func callUserFunc(env *Environ, f *callable, expr *parser.Node) object.Object {
 	// TODO: add checking. At least check if number of args is correct
 	for param.R != nil && arg.R != nil {
 		val := eval(env, arg)
-		newFrame.vars[string(param.L.Tok.Value)] = val
+		newFrame.vars[ident(param)] = val
 		param = param.R
 		arg = arg.R
 	}
 	return eval(newFrame, f.body)
+}
+
+func ident(node *parser.Node) string {
+	return string(node.L.Tok.Value)
 }
 
 var indent int
