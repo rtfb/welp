@@ -70,13 +70,7 @@ func callUserFunc(env *Environ, f *callable, expr *parser.Node) object.Object {
 	// TODO: add checking. At least check if number of args is correct
 	for param.R != nil && arg.R != nil {
 		val := eval(env, arg)
-		nval, ok := val.(*object.Integer)
-		if !ok {
-			fmt.Printf("Type error: unexpected type %T for %s\n", val, f.name)
-		}
-		newFrame.vars[string(param.L.Tok.Value)] = &object.Integer{
-			Value: nval.Value,
-		}
+		newFrame.vars[string(param.L.Tok.Value)] = val
 		param = param.R
 		arg = arg.R
 	}
