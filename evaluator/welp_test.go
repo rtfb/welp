@@ -60,3 +60,22 @@ func TestEvalEq(t *testing.T) {
 		assert.Equal(t, test.expected, boolGot.Value, "eval(%q)", test.input)
 	}
 }
+
+func TestLet(t *testing.T) {
+	env := NewEnv()
+	// assign something to x
+	got := eval(env, parser.ParseString("(let x 5)"))
+	assert.IsType(t, &object.Integer{}, got)
+	intGot := got.(*object.Integer)
+	assert.Equal(t, int64(5), intGot.Value)
+	// now look it up: as an expr:
+	got2 := eval(env, parser.ParseString("(x)"))
+	assert.IsType(t, &object.Integer{}, got2)
+	intGot2 := got2.(*object.Integer)
+	assert.Equal(t, int64(5), intGot2.Value)
+	// and as a standalone identifier:
+	got3 := eval(env, parser.ParseString("x"))
+	assert.IsType(t, &object.Integer{}, got3)
+	intGot3 := got3.(*object.Integer)
+	assert.Equal(t, int64(5), intGot3.Value)
+}

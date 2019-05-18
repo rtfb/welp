@@ -31,6 +31,7 @@ func makeBuildins() map[string]*callable {
 		"fn":   &callable{name: "fn", f: defun, builtin: true},
 		"cond": &callable{name: "cond", f: cond, builtin: true},
 		"eq":   &callable{name: "eq", f: eq, builtin: true},
+		"let":  &callable{name: "let", f: let, builtin: true},
 	}
 }
 
@@ -189,4 +190,12 @@ func defun(env *Environ, expr *parser.Node) object.Object {
 		body:    body,
 	}
 	return &object.Func{Name: funcName}
+}
+
+// (let identifier (+ 2 3)) => 5
+// identifier => 5
+func let(env *Environ, expr *parser.Node) object.Object {
+	value := eval(env, expr.R)
+	env.vars[string(expr.L.Tok.Value)] = value
+	return value
 }

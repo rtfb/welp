@@ -117,6 +117,9 @@ func (t *Tokenizer) onNumber() {
 		}
 		buf.WriteByte(b)
 	}
+	if err == io.EOF {
+		err = nil
+	}
 	t.Tok <- Token{Typ: TokNumber, Value: buf.Bytes(), Pos: t.Head, Err: err}
 	t.Head += buf.Len()
 }
@@ -135,6 +138,9 @@ func (t *Tokenizer) onChar() {
 			break
 		}
 		buf.WriteByte(b)
+	}
+	if err == io.EOF {
+		err = nil
 	}
 	t.Tok <- Token{Typ: TokIdentifier, Value: buf.Bytes(), Pos: t.Head, Err: err}
 	t.Head += buf.Len()

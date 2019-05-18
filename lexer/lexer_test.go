@@ -21,6 +21,9 @@ func TestTokenizer(t *testing.T) {
 		{"(+ 123 321)", []string{"(", "+", "123", "321", ")"}},
 		{`(print "foo\\")`, []string{"(", "print", "foo\\", ")"}},
 		{`(print "foo\n")`, []string{"(", "print", "foo\n", ")"}},
+		{"x", []string{"x"}},
+		{"9", []string{"9"}},
+		{"19", []string{"19"}},
 	}
 	for _, test := range tests {
 		tokzer := NewTokenizer(strings.NewReader(test.input))

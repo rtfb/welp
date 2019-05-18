@@ -71,7 +71,7 @@ func (r *repl) Run() {
 		if err != nil || line == "(q)" {
 			break
 		}
-		r.w.Write([]byte(line))
+		r.w.Write([]byte(line + "\n"))
 		r.epl()
 	}
 	fmt.Println("Quitting")

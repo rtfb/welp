@@ -79,6 +79,15 @@ func (p *Parser) rparse() {
 			treeNode = &Node{
 				Tok: tok,
 			}
+			if p.depth == 0 {
+				// this is a special case for a standalone identifier in REPL:
+				// welp> (let x 7)
+				// welp> x
+				// 7
+				p.tree = &Node{L: treeNode}
+				p.done = true
+				return
+			}
 		case lexer.TokEOF:
 			p.done = true
 			return
@@ -109,6 +118,7 @@ func (p *Parser) Parse() (node *Node, n int) {
 // Reset clears parser state.
 func (p *Parser) Reset() {
 	p.tree = nil
+	p.head = nil
 	p.done = false
 }
 

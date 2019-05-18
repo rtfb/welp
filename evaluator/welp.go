@@ -29,6 +29,9 @@ func copyEnv(src *Environ) *Environ {
 	for k, v := range src.vars {
 		dst.vars[k] = v
 	}
+	for k, v := range src.funcs {
+		dst.funcs[k] = v
+	}
 	return dst
 }
 
