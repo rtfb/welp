@@ -21,17 +21,20 @@ type callable struct {
 	body   *parser.Node
 }
 
-func makeBuildins() map[string]*callable {
+func makeBuiltins() map[string]*callable {
 	return map[string]*callable{
-		"+":    &callable{name: "+", f: sum, builtin: true},
-		"-":    &callable{name: "-", f: sub, builtin: true},
-		"*":    &callable{name: "*", f: mul, builtin: true},
-		"exp":  &callable{name: "exp", f: exp, builtin: true},
-		"eval": &callable{name: "eval", f: eval, builtin: true},
-		"fn":   &callable{name: "fn", f: defun, builtin: true},
-		"cond": &callable{name: "cond", f: cond, builtin: true},
-		"eq":   &callable{name: "eq", f: eq, builtin: true},
-		"let":  &callable{name: "let", f: let, builtin: true},
+		"+":        &callable{name: "+", f: sum, builtin: true},
+		"-":        &callable{name: "-", f: sub, builtin: true},
+		"*":        &callable{name: "*", f: mul, builtin: true},
+		"exp":      &callable{name: "exp", f: exp, builtin: true},
+		"eval":     &callable{name: "eval", f: eval, builtin: true},
+		"fn":       &callable{name: "fn", f: defun, builtin: true},
+		"cond":     &callable{name: "cond", f: cond, builtin: true},
+		"eq":       &callable{name: "eq", f: eq, builtin: true},
+		"let":      &callable{name: "let", f: let, builtin: true},
+		"mk-array": &callable{name: "mk-array", f: makeArray, builtin: true},
+		"append":   &callable{name: "append", f: arrAppend, builtin: true},
+		"nth":      &callable{name: "nth", f: nth, builtin: true},
 	}
 }
 
@@ -198,4 +201,58 @@ func let(env *Environ, expr *parser.Node) object.Object {
 	value := eval(env, expr.R)
 	env.vars[string(expr.L.Tok.Value)] = value
 	return value
+}
+
+// (let arr (mk-array))
+// arr => []
+// TODO: find a way to specify the array type upfront.
+func makeArray(env *Environ, expr *parser.Node) object.Object {
+	return &object.Array{Value: nil}
+}
+
+// (let arr (mk-array))
+// arr => []
+// (append arr 3 5)
+// arr => [3, 5]
+func arrAppend(env *Environ, expr *parser.Node) object.Object {
+	arrObj := eval(env, expr)
+	if arrObj.Type() != object.ArrayType {
+		return &object.Error{Err: fmt.Errorf("expected array, got %v", arrObj.Type())}
+	}
+	arr := arrObj.(*object.Array)
+	arg := expr.R
+	for arg.L != nil {
+		value := eval(env, arg)
+		if len(arr.Value) == 0 {
+			arr.ValueType = value.Type()
+		} else if value.Type() != arr.ValueType {
+			return &object.Error{Err: fmt.Errorf("type mismatch: %v and %v",
+				value.Type(), arr.ValueType)}
+		}
+		arr.Value = append(arr.Value, value)
+		arg = arg.R
+	}
+	return arr
+}
+
+// (append arr 1 2 3)
+// (nth 1 arr)
+// => 2
+func nth(env *Environ, expr *parser.Node) object.Object {
+	indexObj := eval(env, expr)
+	if indexObj.Type() != object.IntegerType {
+		return &object.Error{Err: fmt.Errorf("type mismatch: %v and %v",
+			indexObj.Type(), object.IntegerType)}
+	}
+	index := (indexObj.(*object.Integer)).Value
+	arrObj := eval(env, expr.R)
+	arr, ok := arrObj.(*object.Array)
+	if !ok {
+		return &object.Error{Err: fmt.Errorf("expected array, got %v", arrObj.Type())}
+	}
+	if index >= int64(len(arr.Value)) {
+		return &object.Error{Err: fmt.Errorf("out of bounds: %d >= %d",
+			index, len(arr.Value))}
+	}
+	return arr.Value[index]
 }

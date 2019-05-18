@@ -18,7 +18,7 @@ func doFile(name string) error {
 	env := evaluator.NewEnv()
 	ch := parser.ParseStream(f)
 	for expr := range ch {
-		fmt.Println(evaluator.Eval(env, expr))
+		fmt.Println(evaluator.Eval(env, expr).Inspect())
 	}
 	return nil
 }
@@ -61,7 +61,7 @@ func (r *repl) epl() {
 		return
 	}
 	r.rl.SetPrompt("welp> ")
-	fmt.Println(evaluator.Eval(r.env, expr))
+	fmt.Println(evaluator.Eval(r.env, expr).Inspect())
 	r.p.Reset()
 }
 

@@ -1,6 +1,9 @@
 package object
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Type is a constant representing the type of an underlying object.
 type Type string
@@ -11,6 +14,7 @@ const (
 	BooleanType = "BOOLEAN"
 	NullType    = "NULL"
 	FuncType    = "FUNCTION"
+	ArrayType   = "ARRAY"
 	ErrType     = "ERROR"
 )
 
@@ -92,4 +96,32 @@ func (e *Error) Type() Type {
 // Inspect implements Object.
 func (e *Error) Inspect() string {
 	return fmt.Sprintf("ERR: %v", e.Err)
+}
+
+// Array represents an array.
+type Array struct {
+	ValueType Type
+	Value     []Object
+}
+
+// Type implements Object.
+func (a *Array) Type() Type {
+	return ArrayType
+}
+
+// Inspect implements Object.
+func (a *Array) Inspect() string {
+	if len(a.Value) == 0 {
+		return "[]"
+	}
+	sb := strings.Builder{}
+	sb.WriteString("[")
+	for i := range a.Value {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(a.Value[i].Inspect())
+	}
+	sb.WriteString("]")
+	return sb.String()
 }

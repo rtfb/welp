@@ -79,3 +79,27 @@ func TestLet(t *testing.T) {
 	intGot3 := got3.(*object.Integer)
 	assert.Equal(t, int64(5), intGot3.Value)
 }
+
+func TestArrays(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected object.Object
+	}{
+		{"(mk-array)", &object.Array{}},
+		{"(append (mk-array) 3 4)",
+			&object.Array{
+				ValueType: object.IntegerType,
+				Value: []object.Object{
+					&object.Integer{Value: 3},
+					&object.Integer{Value: 4},
+				},
+			},
+		},
+		{"(nth 2 (append (mk-array) 3 (+ 2 3) 7))", &object.Integer{Value: 7}},
+	}
+	for _, test := range tests {
+		env := NewEnv()
+		got := eval(env, parser.ParseString(test.input))
+		assert.Equal(t, test.expected, got)
+	}
+}

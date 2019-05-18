@@ -140,13 +140,13 @@ func ParseStream(r io.Reader) <-chan *Node {
 	go func() {
 		for {
 			node, newN := p.Parse()
+			if node == nil {
+				break
+			}
 			if newN == n {
 				ch <- &Node{
 					Err: errors.New("newN == n, can't progress"),
 				}
-				break
-			}
-			if node == nil {
 				break
 			}
 			n = newN

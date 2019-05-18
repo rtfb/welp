@@ -20,7 +20,7 @@ type Environ struct {
 func NewEnv() *Environ {
 	return &Environ{
 		vars:  make(map[string]object.Object),
-		funcs: makeBuildins(),
+		funcs: makeBuiltins(),
 	}
 }
 
