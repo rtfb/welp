@@ -35,6 +35,7 @@ func makeBuiltins() map[string]*callable {
 		"mk-array": &callable{name: "mk-array", f: makeArray, builtin: true},
 		"append":   &callable{name: "append", f: arrAppend, builtin: true},
 		"nth":      &callable{name: "nth", f: nth, builtin: true},
+		"len":      &callable{name: "len", f: arrLen, builtin: true},
 	}
 }
 
@@ -255,4 +256,15 @@ func nth(env *Environ, expr *parser.Node) object.Object {
 			index, len(arr.Value))}
 	}
 	return arr.Value[index]
+}
+
+// (len (append (mk-array) 7 9))
+// => 2
+func arrLen(env *Environ, expr *parser.Node) object.Object {
+	arrObj := eval(env, expr)
+	if arrObj.Type() != object.ArrayType {
+		return &object.Error{Err: fmt.Errorf("expected array, got %v", arrObj.Type())}
+	}
+	arr := arrObj.(*object.Array)
+	return &object.Integer{Value: int64(len(arr.Value))}
 }

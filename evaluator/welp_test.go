@@ -96,6 +96,7 @@ func TestArrays(t *testing.T) {
 			},
 		},
 		{"(nth 2 (append (mk-array) 3 (+ 2 3) 7))", &object.Integer{Value: 7}},
+		{"(len (append (mk-array) 7 9))", &object.Integer{Value: 2}},
 	}
 	for _, test := range tests {
 		env := NewEnv()
