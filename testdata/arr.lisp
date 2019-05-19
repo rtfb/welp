@@ -9,7 +9,7 @@
 
 (fn rest-impl (arr new-arr pos)
   (cond
-    ((eq pos 3) new-arr)
+    ((eq pos (len arr)) new-arr)
     (t
       (rest-impl arr (append new-arr (nth pos arr)) (+1 pos)))))
 

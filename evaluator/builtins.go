@@ -158,9 +158,26 @@ func eval(env *Environ, expr *parser.Node) object.Object {
 // (eq 3 3) => T
 // (eq 3 4) => NIL
 func eq(env *Environ, expr *parser.Node) object.Object {
-	left := num(env, expr.L.Tok)
-	right := num(env, expr.R.L.Tok)
-	return &object.Boolean{Value: left == right}
+	leftObj := eval(env, expr)
+	rightObj := eval(env, expr.R)
+	if leftObj.Type() != rightObj.Type() {
+		return &object.Error{Err: fmt.Errorf("type mismatch: %v and %v",
+			leftObj.Type(), rightObj.Type())}
+	}
+	switch left := leftObj.(type) {
+	case *object.Integer:
+		right := rightObj.(*object.Integer)
+		return &object.Boolean{Value: left.Value == right.Value}
+	case *object.Boolean:
+		right := rightObj.(*object.Boolean)
+		return &object.Boolean{Value: left.Value == right.Value}
+	case *object.Error:
+		right := rightObj.(*object.Error)
+		return &object.Boolean{Value: left.Err == right.Err}
+	default:
+		return &object.Error{Err: fmt.Errorf("types not comparable with eq: %v and %v",
+			leftObj.Type(), rightObj.Type())}
+	}
 }
 
 // (cond
