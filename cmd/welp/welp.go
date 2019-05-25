@@ -10,19 +10,6 @@ import (
 	"github.com/rtfb/welp/parser"
 )
 
-func doFile(name string) error {
-	f, err := os.Open(name)
-	if err != nil {
-		return err
-	}
-	env := evaluator.NewEnv()
-	ch := parser.ParseStream(f)
-	for expr := range ch {
-		fmt.Println(evaluator.Eval(env, expr).Inspect())
-	}
-	return nil
-}
-
 type repl struct {
 	rl     *readline.Instance
 	ch     chan *parser.Node
@@ -79,7 +66,8 @@ func (r *repl) Run() {
 
 func main() {
 	if len(os.Args) > 1 {
-		if err := doFile(os.Args[1]); err != nil {
+		env := evaluator.NewEnv()
+		if err := evaluator.EvalFile(env, os.Args[1]); err != nil {
 			panic(err)
 		}
 		return

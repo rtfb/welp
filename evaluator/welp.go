@@ -18,23 +18,29 @@ type Environ struct {
 
 // NewEnv creates an environment.
 func NewEnv() *Environ {
-	return &Environ{
+	builtinEnv := &Environ{
 		vars:  make(map[string]object.Object),
 		funcs: makeBuiltins(),
 	}
+	return builtinEnv.extend(stdlibEnv)
 }
 
-func copyEnv(src *Environ) *Environ {
-	dst := NewEnv()
+func (e *Environ) deepCopy() *Environ {
+	fresh := NewEnv()
+	return fresh.extend(e)
+}
+
+func (e *Environ) extend(src *Environ) *Environ {
 	for k, v := range src.vars {
-		dst.vars[k] = v
+		e.vars[k] = v
 	}
 	for k, v := range src.funcs {
-		dst.funcs[k] = v
+		e.funcs[k] = v
 	}
-	return dst
+	return e
 }
 
+// TODO: get rid of this silly func
 func num(env *Environ, tok lexer.Token) int64 {
 	switch tok.Typ {
 	case lexer.TokNumber:
@@ -64,7 +70,7 @@ func nilNode(n *parser.Node) bool {
 
 // (add 3 7) => 10
 func callUserFunc(env *Environ, f *callable, expr *parser.Node) object.Object {
-	newFrame := copyEnv(env)
+	newFrame := env.deepCopy()
 	param := f.params
 	arg := expr
 	// TODO: add checking. At least check if number of args is correct
