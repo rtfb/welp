@@ -34,7 +34,7 @@ func newREPL() (*repl, error) {
 		rl:     rl,
 		ch:     make(chan *parser.Node),
 		prompt: "welp> ",
-		env:    evaluator.NewEnv(),
+		env:    evaluator.New().NewEnv(),
 		r:      r,
 		w:      w,
 		p:      parser.New(r),
@@ -66,7 +66,7 @@ func (r *repl) Run() {
 
 func main() {
 	if len(os.Args) > 1 {
-		env := evaluator.NewEnv()
+		env := evaluator.New().NewEnv()
 		if err := evaluator.EvalFile(env, os.Args[1]); err != nil {
 			panic(err)
 		}

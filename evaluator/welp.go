@@ -10,34 +10,21 @@ import (
 	"github.com/rtfb/welp/parser"
 )
 
-// Environ represents the execution environment.
-type Environ struct {
-	vars  map[string]object.Object
-	funcs map[string]*callable
+// Evaluator holds global values required for evaluation of the expressions.
+type Evaluator struct {
+	stdlibEnv *Environ
+}
+
+// New creates an Evaluator.
+func New() *Evaluator {
+	return &Evaluator{
+		stdlibEnv: initStdlib(),
+	}
 }
 
 // NewEnv creates an environment.
-func NewEnv() *Environ {
-	builtinEnv := &Environ{
-		vars:  make(map[string]object.Object),
-		funcs: makeBuiltins(),
-	}
-	return builtinEnv.extend(stdlibEnv)
-}
-
-func (e *Environ) deepCopy() *Environ {
-	fresh := NewEnv()
-	return fresh.extend(e)
-}
-
-func (e *Environ) extend(src *Environ) *Environ {
-	for k, v := range src.vars {
-		e.vars[k] = v
-	}
-	for k, v := range src.funcs {
-		e.funcs[k] = v
-	}
-	return e
+func (e *Evaluator) NewEnv() *Environ {
+	return newEnv(e)
 }
 
 // TODO: get rid of this silly func

@@ -7,12 +7,6 @@ import (
 	"github.com/rtfb/welp/parser"
 )
 
-var stdlibEnv *Environ
-
-func init() {
-	stdlibEnv = initStdlib()
-}
-
 func initStdlib() *Environ {
 	bootstrapEnv := &Environ{
 		vars:  make(map[string]object.Object),

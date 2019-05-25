@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var testEvaluator = Evaluator{stdlibEnv: newEmptyEnv()}
+
 func TestEvalMath(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -22,7 +24,7 @@ func TestEvalMath(t *testing.T) {
 		{"(- 7 5)", 2},
 	}
 	for _, test := range tests {
-		env := NewEnv()
+		env := testEvaluator.NewEnv()
 		got := eval(env, parser.ParseString(test.input))
 		assert.IsType(t, &object.Integer{}, got)
 		intGot := got.(*object.Integer)
@@ -38,7 +40,7 @@ func TestEvalEmpty(t *testing.T) {
 		{"", 0},
 	}
 	for _, test := range tests {
-		env := NewEnv()
+		env := testEvaluator.NewEnv()
 		got := eval(env, parser.ParseString(test.input))
 		assert.IsType(t, &object.Null{}, got)
 	}
@@ -53,7 +55,7 @@ func TestEvalEq(t *testing.T) {
 		{"(eq 3 4)", false},
 	}
 	for _, test := range tests {
-		env := NewEnv()
+		env := testEvaluator.NewEnv()
 		got := eval(env, parser.ParseString(test.input))
 		assert.IsType(t, &object.Boolean{}, got)
 		boolGot := got.(*object.Boolean)
@@ -62,7 +64,7 @@ func TestEvalEq(t *testing.T) {
 }
 
 func TestLet(t *testing.T) {
-	env := NewEnv()
+	env := testEvaluator.NewEnv()
 	// assign something to x
 	got := eval(env, parser.ParseString("(let x 5)"))
 	assert.IsType(t, &object.Integer{}, got)
@@ -99,7 +101,7 @@ func TestArrays(t *testing.T) {
 		{"(len (append (mk-array) 7 9))", &object.Integer{Value: 2}},
 	}
 	for _, test := range tests {
-		env := NewEnv()
+		env := testEvaluator.NewEnv()
 		got := eval(env, parser.ParseString(test.input))
 		assert.Equal(t, test.expected, got)
 	}
