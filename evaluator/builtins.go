@@ -37,6 +37,7 @@ func makeBuiltins() map[string]*callable {
 		"nth":      &callable{name: "nth", f: nth, builtin: true},
 		"len":      &callable{name: "len", f: arrLen, builtin: true},
 		"print":    &callable{name: "print", f: print, builtin: true},
+		"import":   &callable{name: "import", f: importFiles, builtin: true},
 	}
 }
 
@@ -291,5 +292,28 @@ func arrLen(env *Environ, expr *parser.Node) object.Object {
 
 func print(env *Environ, expr *parser.Node) object.Object {
 	fmt.Println(eval(env, expr).Inspect())
+	return &object.Null{}
+}
+
+// (import "foo.lisp" "bar.lisp") => nil
+// will evaluate foo.lisp and bar.lisp, and populate the env.
+func importFiles(env *Environ, expr *parser.Node) object.Object {
+	var files []string
+	for expr.L != nil {
+		value := eval(env, expr)
+		if value.Type() != object.StringType {
+			return &object.Error{Err: fmt.Errorf("import only does strings, but got %v",
+				value.Type())}
+		}
+		valueStr := value.(*object.String)
+		files = append(files, valueStr.Value)
+		expr = expr.R
+	}
+	for _, file := range files {
+		err := EvalFile(env, file)
+		if err != nil {
+			return &object.Error{Err: err}
+		}
+	}
 	return &object.Null{}
 }
