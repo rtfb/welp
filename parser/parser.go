@@ -75,7 +75,7 @@ func (p *Parser) rparse() {
 				p.done = true
 			}
 			return
-		case lexer.TokIdentifier, lexer.TokNumber:
+		case lexer.TokIdentifier, lexer.TokNumber, lexer.TokString:
 			treeNode = &Node{
 				Tok: tok,
 			}

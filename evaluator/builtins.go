@@ -147,6 +147,8 @@ func eval(env *Environ, expr *parser.Node) object.Object {
 		fmt.Printf("No such symbol %q\n", expr.L.Tok.String())
 	case lexer.TokNumber:
 		return &object.Integer{Value: num(env, expr.L.Tok)}
+	case lexer.TokString:
+		return &object.String{Value: string(expr.L.Tok.Value)}
 	case lexer.TokVoid:
 		return eval(env, expr.L)
 	default:

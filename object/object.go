@@ -12,6 +12,7 @@ type Type string
 const (
 	IntegerType = "INTEGER"
 	BooleanType = "BOOLEAN"
+	StringType  = "STRING"
 	NullType    = "NULL"
 	FuncType    = "FUNCTION"
 	ArrayType   = "ARRAY"
@@ -52,6 +53,21 @@ func (b *Boolean) Type() Type {
 // Inspect implements Object.
 func (b *Boolean) Inspect() string {
 	return fmt.Sprintf("%v", b.Value)
+}
+
+// String represents WELP's string values.
+type String struct {
+	Value string
+}
+
+// Type implements Object.
+func (s *String) Type() Type {
+	return StringType
+}
+
+// Inspect implements Object.
+func (s *String) Inspect() string {
+	return fmt.Sprintf("%q", s.Value)
 }
 
 // Null represents WELP's null values.
